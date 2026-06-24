@@ -288,10 +288,10 @@ As of this checkpoint:
 - package install smoke gate: verified-package-install-smoke
 - plugin install smoke gate: verified-plugin-install-smoke
 - pilot PromptPreparationLedger: 1/1 verified
-- pilot context tokens per verified task: 16,119
+- pilot context tokens per verified task: 927
 - pilot start-context savings: 49%
-- pilot sendable prompt savings: 13%
-- impact sendable prompt savings: 13%
+- pilot sendable prompt savings: 23%
+- impact sendable prompt savings: 23%
 - release-audit requirements: 30/30
 - release-audit ExperimentPlan: verified-experiment-plan, 12 planned runs
 - release-audit ExperimentScript: verified-experiment-script, 12 planned runs, executable
@@ -309,9 +309,9 @@ As of this checkpoint:
 - MCP tools: 48
 - DoctorOverhead gate: verified-doctor-overhead
 - DoctorOverhead standard profile: 20/48 MCP tools, about 11,716 estimated catalog tokens saved
-- package size: 281.4 kB
-- unpacked size: 1277 kB
-- package files: 92
+- package size: 263.7 kB
+- unpacked size: 1209.1 kB
+- package files: 95
 - benchmark average saving: 55%
 - benchmark tokens per successful case: 83
 - benchmark p95 saved tokens: 163

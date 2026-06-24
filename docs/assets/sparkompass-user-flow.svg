@@ -1,67 +1,76 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
-  <title id="title">Sparkompass Nutzerfluss</title>
-  <desc id="desc">Zeigt, wann Sparkompass beim Vorbereiten eines Codex-Laufs eingreift.</desc>
-  <rect width="1280" height="720" fill="#fbfbf8"/>
-  <text x="64" y="72" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="700" fill="#111827">Wann passiert was?</text>
-  <text x="64" y="108" font-family="Inter, Arial, sans-serif" font-size="18" fill="#4b5563">Vom User-Ziel bis zur Router-Entscheidung</text>
+  <title id="title">Sparkompass Ablauf</title>
+  <desc id="desc">Ablaufdiagramm vom Nutzerziel bis zur Codex-Übergabe mit Nachlade- und Messschritt.</desc>
+  <rect width="1280" height="720" fill="#ffffff"/>
+  <g font-family="Inter, Arial, sans-serif">
+    <text x="72" y="94" font-size="34" font-weight="700" fill="#111827">Wann passiert was?</text>
+    <text x="72" y="130" font-size="18" fill="#4b5563">Der kleine Kontext wird geplant, geprüft und erst dann an Codex übergeben.</text>
 
-  <g font-family="Inter, Arial, sans-serif" font-size="16">
-    <line x1="130" y1="250" x2="1150" y2="250" stroke="#94a3b8" stroke-width="4"/>
+    <line x1="118" y1="238" x2="1162" y2="238" stroke="#cbd5e1" stroke-width="3"/>
+
     <g>
-      <circle cx="130" cy="250" r="38" fill="#e0f2fe" stroke="#0284c7" stroke-width="3"/>
-      <text x="118" y="258" font-size="24" font-weight="700" fill="#075985">1</text>
-      <text x="82" y="330" font-size="18" font-weight="700" fill="#0f172a">Ziel</text>
-      <text x="65" y="360" fill="#334155">User nennt Aufgabe</text>
-    </g>
-    <g>
-      <circle cx="300" cy="250" r="38" fill="#dbeafe" stroke="#2563eb" stroke-width="3"/>
-      <text x="288" y="258" font-size="24" font-weight="700" fill="#1e3a8a">2</text>
-      <text x="250" y="330" font-size="18" font-weight="700" fill="#0f172a">Preflight</text>
-      <text x="230" y="360" fill="#334155">Repo scannen</text>
-      <text x="230" y="386" fill="#334155">AGENTS pruefen</text>
-    </g>
-    <g>
-      <circle cx="470" cy="250" r="38" fill="#dcfce7" stroke="#16a34a" stroke-width="3"/>
-      <text x="458" y="258" font-size="24" font-weight="700" fill="#14532d">3</text>
-      <text x="425" y="330" font-size="18" font-weight="700" fill="#0f172a">Packen</text>
-      <text x="393" y="360" fill="#334155">kleiner Kontext</text>
-      <text x="393" y="386" fill="#334155">wichtige Fakten</text>
-    </g>
-    <g>
-      <circle cx="640" cy="250" r="38" fill="#fef3c7" stroke="#d97706" stroke-width="3"/>
-      <text x="628" y="258" font-size="24" font-weight="700" fill="#78350f">4</text>
-      <text x="592" y="330" font-size="18" font-weight="700" fill="#0f172a">Pruefen</text>
-      <text x="558" y="360" fill="#334155">Oracle, Shadow</text>
-      <text x="558" y="386" fill="#334155">TaskOutcome</text>
-    </g>
-    <g>
-      <circle cx="810" cy="250" r="38" fill="#fce7f3" stroke="#db2777" stroke-width="3"/>
-      <text x="798" y="258" font-size="24" font-weight="700" fill="#831843">5</text>
-      <text x="766" y="330" font-size="18" font-weight="700" fill="#0f172a">Messen</text>
-      <text x="732" y="360" fill="#334155">Codex JSONL</text>
-      <text x="732" y="386" fill="#334155">RunManifest</text>
-    </g>
-    <g>
-      <circle cx="980" cy="250" r="38" fill="#ede9fe" stroke="#7c3aed" stroke-width="3"/>
-      <text x="968" y="258" font-size="24" font-weight="700" fill="#4c1d95">6</text>
-      <text x="936" y="330" font-size="18" font-weight="700" fill="#0f172a">Router</text>
-      <text x="900" y="360" fill="#334155">bypass, compact</text>
-      <text x="900" y="386" fill="#334155">lazy oder full</text>
-    </g>
-    <g>
-      <circle cx="1150" cy="250" r="38" fill="#fee2e2" stroke="#dc2626" stroke-width="3"/>
-      <text x="1138" y="258" font-size="24" font-weight="700" fill="#7f1d1d">7</text>
-      <text x="1110" y="330" font-size="18" font-weight="700" fill="#0f172a">Codex</text>
-      <text x="1068" y="360" fill="#334155">enger Start</text>
-      <text x="1068" y="386" fill="#334155">Nachladen bei Bedarf</text>
+      <rect x="82" y="188" width="168" height="100" rx="8" fill="#f8fafc" stroke="#0f172a"/>
+      <text x="112" y="226" font-size="22" font-weight="700" fill="#111827">1. Ziel</text>
+      <text x="112" y="256" font-size="15" fill="#475569">Aufgabe, Dateien,</text>
+      <text x="112" y="278" font-size="15" fill="#475569">Done-Kriterium</text>
     </g>
 
-    <rect x="116" y="500" width="500" height="92" rx="14" fill="#ffffff" stroke="#cbd5e1"/>
-    <text x="146" y="536" font-size="20" font-weight="700" fill="#0f172a">Live-Nutzung</text>
-    <text x="146" y="566" fill="#334155">Schneller Start: audit, recommend, handoff, router</text>
+    <g>
+      <rect x="282" y="188" width="168" height="100" rx="8" fill="#f8fafc" stroke="#2563eb"/>
+      <text x="312" y="226" font-size="22" font-weight="700" fill="#1e3a8a">2. Plan</text>
+      <text x="312" y="256" font-size="15" fill="#475569">Audit, Inventory,</text>
+      <text x="312" y="278" font-size="15" fill="#475569">ContextPlan</text>
+    </g>
 
-    <rect x="664" y="500" width="500" height="92" rx="14" fill="#ffffff" stroke="#cbd5e1"/>
-    <text x="694" y="536" font-size="20" font-weight="700" fill="#0f172a">Beweis-Labor</text>
-    <text x="694" y="566" fill="#334155">ExperimentRun, Usage-Invarianten, Release-Audit</text>
+    <g>
+      <rect x="482" y="188" width="168" height="100" rx="8" fill="#f8fafc" stroke="#16a34a"/>
+      <text x="512" y="226" font-size="22" font-weight="700" fill="#14532d">3. Pack</text>
+      <text x="512" y="256" font-size="15" fill="#475569">ContextPack,</text>
+      <text x="512" y="278" font-size="15" fill="#475569">Handoff</text>
+    </g>
+
+    <g>
+      <rect x="682" y="188" width="168" height="100" rx="8" fill="#f8fafc" stroke="#d97706"/>
+      <text x="712" y="226" font-size="22" font-weight="700" fill="#78350f">4. Prüfen</text>
+      <text x="712" y="256" font-size="15" fill="#475569">Oracle, Evidence,</text>
+      <text x="712" y="278" font-size="15" fill="#475569">Ablation</text>
+    </g>
+
+    <g>
+      <rect x="882" y="188" width="168" height="100" rx="8" fill="#f8fafc" stroke="#64748b"/>
+      <text x="912" y="226" font-size="22" font-weight="700" fill="#111827">5. Nutzen</text>
+      <text x="912" y="256" font-size="15" fill="#475569">enger Start,</text>
+      <text x="912" y="278" font-size="15" fill="#475569">Nachladen</text>
+    </g>
+
+    <g>
+      <rect x="1082" y="188" width="136" height="100" rx="8" fill="#111827"/>
+      <text x="1112" y="226" font-size="22" font-weight="700" fill="#ffffff">6. Messen</text>
+      <text x="1112" y="256" font-size="15" fill="#d1d5db">Usage,</text>
+      <text x="1112" y="278" font-size="15" fill="#d1d5db">Task</text>
+    </g>
+
+    <path d="M250 238 H282" stroke="#64748b" stroke-width="2.5" marker-end="url(#arrow)"/>
+    <path d="M450 238 H482" stroke="#64748b" stroke-width="2.5" marker-end="url(#arrow)"/>
+    <path d="M650 238 H682" stroke="#64748b" stroke-width="2.5" marker-end="url(#arrow)"/>
+    <path d="M850 238 H882" stroke="#64748b" stroke-width="2.5" marker-end="url(#arrow)"/>
+    <path d="M1050 238 H1082" stroke="#64748b" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+    <rect x="92" y="388" width="500" height="134" rx="8" fill="#f8fafc" stroke="#d8dee8"/>
+    <text x="124" y="430" font-size="22" font-weight="700" fill="#111827">Live-Nutzung</text>
+    <text x="124" y="464" font-size="16" fill="#475569">`audit`, `recommend`, `pack` und `handoff` verkleinern die Übergabe.</text>
+    <text x="124" y="492" font-size="16" fill="#475569">MCP lädt Originalstellen nur nach, wenn sie wirklich gebraucht werden.</text>
+
+    <rect x="688" y="388" width="500" height="134" rx="8" fill="#f8fafc" stroke="#d8dee8"/>
+    <text x="720" y="430" font-size="22" font-weight="700" fill="#111827">Beweis-Labor</text>
+    <text x="720" y="464" font-size="16" fill="#475569">`codex-usage`, `experiment run`, `TaskOutcome` und Router prüfen,</text>
+    <text x="720" y="492" font-size="16" fill="#475569">ob weniger Kontext auch gleich gute Ergebnisse trägt.</text>
+
+    <text x="92" y="620" font-size="15" fill="#64748b">Der Hook ist nur ein lokaler Hinweisgeber. Er ersetzt den Prompt nicht automatisch und blockiert keine Aufgabe.</text>
   </g>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#64748b"/>
+    </marker>
+  </defs>
 </svg>

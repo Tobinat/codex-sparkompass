@@ -14,6 +14,8 @@ Technical Preview für GitHub.
 - RunManifest- und Usage-Invariant-Prüfung für offizielle Codex-JSONL-Usage
 - Router-Modi `bypass`, `compact`, `lazy`, `full`
 - Tool-Profile `minimal`, `standard`, `benchmark`, `release`, `debug`
+- Gekürzte README; ausführliche Nutzung und Messwerte liegen in `docs/usage.md` und `docs/evidence.md`
+- Überarbeitete SVG-Diagramme mit Umlauten und eigenem Einsparungsdiagramm
 - Release-Audit mit `30/30` lokalen Anforderungen
 - `SparkompassGatePathV1` als Pfad von offizieller A/B-Usage-Evidenz zu `quality-noninferior` und vorbereitetem `verified-end-to-end-noninferior`
 

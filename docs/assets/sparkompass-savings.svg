@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Sparkompass Einsparungen</title>
+  <desc id="desc">Diagramm der ersten lokalen Sparkompass-Messwerte: Codex A/B-Lauf, Benchmark, Pilot und PromptPreparation.</desc>
+  <rect width="1280" height="720" fill="#ffffff"/>
+  <g font-family="Inter, Arial, sans-serif">
+    <text x="72" y="88" font-size="34" font-weight="700" fill="#111827">Was wurde im ersten Test gespart?</text>
+    <text x="72" y="124" font-size="18" fill="#4b5563">Lokale Belege. Keine Preisberechnung und kein allgemeines Sparversprechen.</text>
+
+    <rect x="72" y="174" width="540" height="186" rx="8" fill="#f8fafc" stroke="#d8dee8"/>
+    <text x="104" y="220" font-size="22" font-weight="700" fill="#111827">Codex A/B-Lauf</text>
+    <text x="104" y="254" font-size="16" fill="#475569">Raw README Prompt gegen Sparkompass Compact Prompt</text>
+    <rect x="104" y="288" width="408" height="22" rx="4" fill="#dbeafe"/>
+    <rect x="104" y="288" width="322" height="22" rx="4" fill="#2563eb"/>
+    <text x="526" y="306" font-size="15" fill="#1e3a8a">21%</text>
+    <text x="104" y="338" font-size="18" font-weight="700" fill="#1e3a8a">8.417 Tokens weniger</text>
+
+    <rect x="668" y="174" width="540" height="186" rx="8" fill="#f8fafc" stroke="#d8dee8"/>
+    <text x="700" y="220" font-size="22" font-weight="700" fill="#111827">Nicht gecachter Input</text>
+    <text x="700" y="254" font-size="16" fill="#475569">Input-Tokens ohne Cache-Anteil im selben A/B-Lauf</text>
+    <rect x="700" y="288" width="408" height="22" rx="4" fill="#dcfce7"/>
+    <rect x="700" y="288" width="237" height="22" rx="4" fill="#16a34a"/>
+    <text x="1122" y="306" font-size="15" fill="#14532d">42%</text>
+    <text x="700" y="338" font-size="18" font-weight="700" fill="#14532d">16.051 Tokens weniger</text>
+
+    <rect x="72" y="416" width="1136" height="190" rx="8" fill="#f8fafc" stroke="#d8dee8"/>
+    <text x="104" y="462" font-size="22" font-weight="700" fill="#111827">Weitere lokale Signale</text>
+
+    <text x="104" y="514" font-size="16" fill="#475569">Benchmark-Ersparnis</text>
+    <rect x="320" y="498" width="560" height="24" rx="4" fill="#e5e7eb"/>
+    <rect x="320" y="498" width="308" height="24" rx="4" fill="#334155"/>
+    <text x="900" y="517" font-size="16" font-weight="700" fill="#111827">55%</text>
+
+    <text x="104" y="558" font-size="16" fill="#475569">Pilot-Startkontext</text>
+    <rect x="320" y="542" width="560" height="24" rx="4" fill="#e5e7eb"/>
+    <rect x="320" y="542" width="274" height="24" rx="4" fill="#334155"/>
+    <text x="900" y="561" font-size="16" font-weight="700" fill="#111827">49%</text>
+
+    <text x="104" y="602" font-size="16" fill="#475569">sendbarer Prompt</text>
+    <rect x="320" y="586" width="560" height="24" rx="4" fill="#e5e7eb"/>
+    <rect x="320" y="586" width="129" height="24" rx="4" fill="#334155"/>
+    <text x="900" y="605" font-size="16" font-weight="700" fill="#111827">23%</text>
+
+    <text x="72" y="662" font-size="14" fill="#64748b">Quelle: docs/official-codex-usage-evidence.md, Dogfood-, Benchmark-, Pilot- und Release-Audit-Ausgaben. Tokenwerte sind lokale Messwerte oder Schätzungen.</text>
+  </g>
+</svg>
