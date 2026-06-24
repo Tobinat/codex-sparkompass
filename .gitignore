@@ -1,0 +1,14 @@
+node_modules/
+coverage/
+dist/
+.sparkompass/
+.DS_Store
+*.log
+!test/fixtures/failure-corpus/stacktrace-cutoff.log
+*.tgz
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env
+.env.*
+!.env.example

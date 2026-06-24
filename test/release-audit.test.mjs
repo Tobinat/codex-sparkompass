@@ -1,0 +1,205 @@
+import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { describe, it } from "node:test";
+import { MCP_TOOLS } from "../src/mcp-tools.mjs";
+import { buildReleaseAudit, formatReleaseAuditReport } from "../src/release-audit.mjs";
+
+describe("SparkompassReleaseAuditV1", () => {
+  it("maps the objective to verified local evidence", async () => {
+    const ledgerDir = await fs.mkdtemp(path.join(os.tmpdir(), "sparkompass-release-audit-"));
+    const audit = await buildReleaseAudit(".", {
+      ledgerDir,
+      maxPackFiles: 1
+    });
+
+    assert.equal(audit.schema, "SparkompassReleaseAuditV1");
+    assert.equal(audit.gate.status, "verified-release-audit");
+    assert.deepEqual(audit.gate.blockers, []);
+    assert.equal(audit.requirements.length, 30);
+    assert.ok(audit.requirements.every((item) => item.status === "verified"));
+    assert.equal(audit.metrics.decision_trace_status, "verified-decision-trace");
+    assert.equal(audit.metrics.evidence_audit_status, "verified-evidence-audit");
+    assert.equal(audit.metrics.ablation_audit_status, "verified-ablation-audit");
+    assert.equal(audit.metrics.slimming_plan_status, "verified-slimming-plan");
+    assert.equal(audit.metrics.context_pack_format_status, "verified-context-pack-format");
+    assert.equal(audit.metrics.context_pack_id_verification_status, "verified-context-pack-id");
+    assert.equal(audit.metrics.source_hash_evidence_status, "verified-source-hash-evidence");
+    assert.equal(audit.metrics.source_hash_contract_status, "verified-source-hash-contract");
+    assert.equal(audit.metrics.semantic_cache_tool_fingerprint_status, "verified-semantic-cache-tool-fingerprint");
+    assert.equal(audit.metrics.semantic_cache_registry_contract_status, "verified-semantic-cache-registry-contract");
+    assert.equal(audit.metrics.prompt_preparation_status, "verified-prompt-preparation");
+    assert.equal(audit.metrics.prompt_preparation_ledger_entries, 1);
+    assert.equal(audit.metrics.experiment_plan_status, "verified-experiment-plan");
+    assert.equal(audit.metrics.experiment_plan_runs, 12);
+    assert.equal(audit.metrics.experiment_plan_repeat, 3);
+    assert.equal(audit.metrics.experiment_script_status, "verified-experiment-script");
+    assert.equal(audit.metrics.experiment_script_codex_runs, 12);
+    assert.equal(audit.metrics.experiment_script_task_outcomes, 12);
+    assert.equal(audit.metrics.experiment_script_executable, true);
+    assert.equal(audit.metrics.experiment_evidence_audit_status, "verified-experiment-evidence");
+    assert.equal(audit.metrics.experiment_evidence_audit_usage_verified_runs, 12);
+    assert.equal(audit.metrics.experiment_evidence_audit_task_outcomes, 12);
+    assert.equal(audit.metrics.experiment_evidence_audit_prompt_hash_matches, 12);
+    assert.equal(audit.metrics.experiment_gate_status, "quality-noninferior");
+    assert.equal(audit.metrics.experiment_router_mode, "compact");
+    assert.equal(audit.metrics.experiment_efficiency_status, "verified-task-efficiency");
+    assert.equal(audit.metrics.experiment_baseline_tokens_per_verified_task, 1100);
+    assert.equal(audit.metrics.experiment_optimized_tokens_per_verified_task, 830);
+    assert.equal(audit.metrics.experiment_tokens_per_verified_task_saved, 270);
+    assert.equal(audit.metrics.experiment_usage_invariant_verified_runs, 4);
+    assert.equal(audit.metrics.experiment_usage_invariant_failed_runs, 0);
+    assert.equal(audit.metrics.experiment_evidence_complete_runs, 4);
+    assert.equal(audit.metrics.experiment_evidence_incomplete_runs, 0);
+    assert.equal(audit.metrics.experiment_context_pack_hash_verified_runs, 4);
+    assert.equal(audit.metrics.experiment_verified_task_outcomes, 2);
+    assert.equal(audit.metrics.gate_path_status, "verified-gate-path-prepared");
+    assert.equal(audit.metrics.gate_path_current_gate, "quality-noninferior");
+    assert.equal(audit.metrics.gate_path_next_gate, "verified-end-to-end-noninferior");
+    assert.equal(audit.metrics.gate_path_end_to_end_status, "end-to-end-noninferior-prepared");
+    assert.equal(audit.metrics.impact_status, "verified-impact");
+    assert.equal(audit.metrics.package_dry_run_status, "verified-package-dry-run");
+    assert.ok(audit.metrics.package_dry_run_files > 0);
+    assert.equal(audit.metrics.package_install_smoke_status, "verified-package-install-smoke");
+    assert.ok(audit.metrics.package_install_smoke_mcp_tools >= 41);
+    assert.equal(audit.metrics.package_install_smoke_benchmark_cases, 10);
+    assert.equal(audit.metrics.plugin_install_smoke_status, "verified-plugin-install-smoke");
+    assert.ok(audit.metrics.plugin_install_smoke_mcp_tools >= 42);
+    assert.equal(audit.metrics.plugin_install_smoke_tool_call_ok, true);
+    assert.ok(audit.metrics.plugin_install_smoke_lookup_selected > 0);
+    assert.equal(audit.metrics.plugin_install_smoke_cache_tool_call_ok, true);
+    assert.ok(audit.metrics.plugin_install_smoke_cache_lookup_selected > 0);
+    assert.equal(audit.metrics.plugin_install_smoke_hook_ok, true);
+    assert.ok(audit.metrics.benchmark_total_cost_tokens_per_verified_task > 0);
+    assert.equal(audit.metrics.benchmark_task_success_delta_percent, 0);
+    assert.ok(audit.metrics.impact_sendable_prompt_savings_percent > 0);
+    assert.ok(audit.metrics.pilot_sendable_prompt_savings_percent > 0);
+    assert.equal(audit.artifacts.context_plan.decision_trace.schema, "ContextDecisionTraceV1");
+    assert.equal(audit.artifacts.evidence_audit.schema, "ContextEvidenceAuditV1");
+    assert.equal(audit.artifacts.ablation_audit.schema, "ContextAblationAuditV1");
+    assert.equal(audit.artifacts.slimming_plan.schema, "ContextSlimmingPlanV1");
+    assert.equal(audit.artifacts.context_pack_format.schema, "ContextPackFormatV1");
+    assert.equal(audit.artifacts.context_pack_format.validation.status, "verified-context-pack-format");
+    assert.equal(audit.artifacts.context_pack_id_verification.schema, "ContextPackIdVerificationProbeV1");
+    assert.equal(audit.artifacts.context_pack_id_verification.verified, true);
+    assert.equal(audit.artifacts.source_hash_evidence.schema, "SourceHashEvidenceProbeV1");
+    assert.equal(audit.artifacts.source_hash_evidence.verified, true);
+    assert.equal(audit.artifacts.source_hash_contract.schema, "SourceHashHandoffContractProbeV1");
+    assert.equal(audit.artifacts.source_hash_contract.verified, true);
+    assert.equal(audit.artifacts.semantic_cache.schema, "SemanticCacheToolFingerprintProbeV1");
+    assert.equal(audit.artifacts.semantic_cache.verified, true);
+    assert.equal(audit.artifacts.semantic_cache.mismatch_blocked, true);
+    assert.equal(audit.artifacts.semantic_cache.registry_contract_verified, true);
+    assert.equal(audit.artifacts.prompt_preparation.schema, "SparkompassPromptPreparationProbeV1");
+    assert.equal(audit.artifacts.prompt_preparation.verified, true);
+    assert.equal(audit.artifacts.prompt_preparation.ledger_status, "verified-prompt-preparation-ledger");
+    assert.equal(audit.artifacts.experiment_plan.schema, "SparkompassExperimentPlanProbeV1");
+    assert.equal(audit.artifacts.experiment_plan.verified, true);
+    assert.equal(audit.artifacts.experiment_plan.commands_include_require_metadata, true);
+    assert.equal(audit.artifacts.experiment_plan.basis_uses_ignore_user_config, true);
+    assert.equal(audit.artifacts.experiment_plan.plugin_uses_tool_profile, true);
+    assert.equal(audit.artifacts.experiment_script.schema, "SparkompassExperimentScriptProbeV1");
+    assert.equal(audit.artifacts.experiment_script.verified, true);
+    assert.equal(audit.artifacts.experiment_script.script_schema, "SparkompassExperimentScriptV1");
+    assert.equal(audit.artifacts.experiment_script.codex_runs, 12);
+    assert.equal(audit.artifacts.experiment_script.task_outcomes, 12);
+    assert.equal(audit.artifacts.experiment_script.audit_before_experiment_run, true);
+    assert.equal(audit.artifacts.experiment_script.executable, true);
+    assert.equal(audit.artifacts.experiment_evidence_audit.schema, "SparkompassExperimentEvidenceAuditProbeV1");
+    assert.equal(audit.artifacts.experiment_evidence_audit.verified, true);
+    assert.equal(audit.artifacts.experiment_evidence_audit.usage_verified_runs, 12);
+    assert.equal(audit.artifacts.experiment_evidence_audit.usage_invariant_verified_runs, 12);
+    assert.equal(audit.artifacts.experiment_probe.schema, "SparkompassExperimentRunV1");
+    assert.equal(audit.artifacts.experiment_probe.gate.status, "quality-noninferior");
+    assert.equal(audit.artifacts.experiment_probe.router_recommendation.mode, "compact");
+    assert.equal(audit.artifacts.experiment_probe.efficiency.status, "verified-task-efficiency");
+    assert.equal(audit.artifacts.experiment_probe.efficiency.tokens_per_verified_task_saved, 270);
+    assert.equal(audit.artifacts.experiment_probe.usage_invariants.verified_runs, 4);
+    assert.equal(audit.artifacts.experiment_probe.usage_invariants.failed_runs, 0);
+    assert.equal(audit.artifacts.experiment_probe.evidence_completeness.complete_runs, 4);
+    assert.equal(audit.artifacts.experiment_probe.evidence_completeness.incomplete_runs, 0);
+    assert.equal(audit.artifacts.gate_path.schema, "SparkompassGatePathV1");
+    assert.equal(audit.artifacts.gate_path.status, "verified-gate-path-prepared");
+    assert.equal(audit.artifacts.gate_path.official_usage_comparison.status, "verified-codex-official-usage-comparison");
+    assert.equal(audit.artifacts.gate_path.official_usage_comparison.total_tokens_saved, 8417);
+    assert.equal(audit.artifacts.gate_path.official_usage_comparison.total_savings_percent, 21);
+    assert.equal(audit.artifacts.gate_path.official_usage_comparison.uncached_input_savings_percent, 42);
+    assert.equal(audit.artifacts.gate_path.quality_noninferior.status, "quality-noninferior");
+    assert.equal(audit.artifacts.gate_path.end_to_end.next_gate, "verified-end-to-end-noninferior");
+    assert.equal(audit.artifacts.gate_path.end_to_end.verified, false);
+    assert.ok(audit.artifacts.gate_path.end_to_end.required_evidence.length > 0);
+    assert.equal(audit.artifacts.impact_report.schema, "SparkompassImpactReportV1");
+    assert.equal(audit.artifacts.impact_report.quality.verified_prompt_preparations, 1);
+    assert.equal(audit.artifacts.package_dry_run.schema, "PackageDryRunAuditV1");
+    assert.equal(audit.artifacts.package_dry_run.verified, true);
+    assert.equal(audit.artifacts.package_install_smoke.schema, "PackageInstallSmokeAuditV1");
+    assert.equal(audit.artifacts.package_install_smoke.verified, true);
+    assert.equal(audit.artifacts.plugin_install_smoke.schema, "PluginInstallSmokeAuditV1");
+    assert.equal(audit.artifacts.plugin_install_smoke.verified, true);
+    assert.ok(audit.requirements.some((item) => item.id === "decision-trace-and-reviewability"));
+    assert.ok(audit.requirements.some((item) => item.id === "evidence-load-verification"));
+    assert.ok(audit.requirements.some((item) => item.id === "source-hash-raw-retrieval"));
+    assert.ok(audit.requirements.some((item) => item.id === "planned-context-ablation"));
+    assert.ok(audit.requirements.some((item) => item.id === "ablation-driven-slimming"));
+    assert.ok(audit.requirements.some((item) => item.id === "open-contextpack-format"));
+    assert.ok(audit.requirements.some((item) => item.id === "context-pack-id-verification"));
+    assert.ok(audit.requirements.some((item) => item.id === "user-impact-report"));
+    assert.ok(audit.requirements.some((item) => item.id === "semantic-cache-contextpack-registry"));
+    assert.ok(audit.requirements.some((item) => item.id === "prompt-preparation-verified-handoff"));
+    assert.ok(audit.requirements.some((item) => item.id === "official-usage-experiment-plan"));
+    assert.ok(audit.requirements.some((item) => item.id === "official-usage-experiment-script"));
+    assert.ok(audit.requirements.some((item) => item.id === "official-usage-experiment-evidence-audit"));
+    assert.ok(audit.requirements.some((item) => item.id === "official-usage-experiment-router"));
+    assert.ok(audit.requirements.some((item) => item.id === "verified-end-to-end-noninferior-gate-prepared"));
+    assert.ok(audit.requirements.some((item) => item.id === "plugin-install-smoke"));
+    assert.ok(audit.requirements.some((item) => item.id === "package-dry-run"));
+    assert.ok(audit.requirements.some((item) => item.id === "package-install-smoke"));
+    assert.equal(audit.artifacts.fallback_probe.expanded.status, "verified-expanded-context");
+    assert.equal(audit.artifacts.fallback_probe.full.status, "fallback-full-context");
+    assert.equal(audit.artifacts.plugin.verified, true);
+    assert.equal(audit.artifacts.package.verified, true);
+    assert.equal(audit.metrics.mcp_tools, MCP_TOOLS.length);
+
+    const report = formatReleaseAuditReport(audit);
+    assert.match(report, /SparkompassReleaseAuditV1/);
+    assert.match(report, /Gate: verified-release-audit/);
+    assert.match(report, /Benchmark-Effizienz:/);
+    assert.match(report, /Experiment Plan:/);
+    assert.match(report, /Experiment Script:/);
+    assert.match(report, /Experiment Evidence Audit:/);
+    assert.match(report, /Experiment Probe:/);
+    assert.match(report, /Gate-Pfad: verified-gate-path-prepared/);
+    assert.match(report, /verified-end-to-end-noninferior/);
+    assert.match(report, /Effizienz verified-task-efficiency/);
+    assert.match(report, /Usage-Invarianten 4\/4/);
+    assert.match(report, /Metadaten 4\/4/);
+    assert.match(report, /ContextPack-Hash 4\/4/);
+    assert.match(report, /Package Dry Run:/);
+    assert.match(report, /Package Install Smoke:/);
+    assert.match(report, /Plugin Install Smoke:/);
+    assert.match(report, /context-control-plane/);
+  });
+
+  it("CLI release-audit emits JSON and exits successfully", async () => {
+    const ledgerDir = await fs.mkdtemp(path.join(os.tmpdir(), "sparkompass-release-audit-cli-"));
+    const result = spawnSync(process.execPath, [
+      "./bin/codex-sparkompass.mjs",
+      "release-audit",
+      ".",
+      "--ledger-dir",
+      ledgerDir,
+      "--json"
+    ], {
+      encoding: "utf8",
+      maxBuffer: 4 * 1024 * 1024
+    });
+
+    assert.equal(result.status, 0, result.stderr);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.schema, "SparkompassReleaseAuditV1");
+    assert.equal(payload.gate.status, "verified-release-audit");
+    assert.equal(payload.artifacts.pilot.gate.status, "verified-pilot-run");
+  });
+});

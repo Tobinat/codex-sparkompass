@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Sparkompass Release-Gates</title>
+  <desc id="desc">Zeigt die Evidenz-Gates von lokaler Usage bis zum vorbereiteten End-to-End-Gate.</desc>
+  <rect width="1280" height="720" fill="#f8fafc"/>
+  <text x="64" y="72" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="700" fill="#0f172a">Release-Gates und Evidenz</text>
+  <text x="64" y="108" font-family="Inter, Arial, sans-serif" font-size="18" fill="#475569">Was heute belegt ist und was fuer Stable noch fehlt</text>
+
+  <g font-family="Inter, Arial, sans-serif">
+    <rect x="80" y="160" width="310" height="150" rx="16" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+    <text x="112" y="205" font-size="22" font-weight="700" fill="#1e3a8a">1. Offizielle Usage</text>
+    <text x="112" y="242" font-size="16" fill="#1e40af">Codex JSONL auswerten</text>
+    <text x="112" y="270" font-size="16" fill="#1e40af">8.417 Tokens gespart</text>
+
+    <rect x="485" y="160" width="310" height="150" rx="16" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/>
+    <text x="517" y="205" font-size="22" font-weight="700" fill="#14532d">2. Qualitaet</text>
+    <text x="517" y="242" font-size="16" fill="#166534">quality-noninferior</text>
+    <text x="517" y="270" font-size="16" fill="#166534">TaskOutcome + Router</text>
+
+    <rect x="890" y="160" width="310" height="150" rx="16" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+    <text x="922" y="205" font-size="22" font-weight="700" fill="#78350f">3. GatePath</text>
+    <text x="922" y="242" font-size="16" fill="#92400e">prepared</text>
+    <text x="922" y="270" font-size="16" fill="#92400e">End-to-End noch offen</text>
+
+    <path d="M390 235 H485" stroke="#64748b" stroke-width="4" marker-end="url(#arrow)"/>
+    <path d="M795 235 H890" stroke="#64748b" stroke-width="4" marker-end="url(#arrow)"/>
+
+    <rect x="80" y="390" width="1120" height="170" rx="18" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="116" y="438" font-size="24" font-weight="700" fill="#0f172a">Naechstes Stable-Gate: verified-end-to-end-noninferior</text>
+    <text x="116" y="482" font-size="18" fill="#334155">Erforderlich: mehrere echte Aufgaben, gepaarte Raw/Compact-Laeufe, offizielle Usage-JSONL, TaskOutcome-Ledger.</text>
+    <text x="116" y="520" font-size="18" fill="#334155">Freigabe erst, wenn Erfolgsrate gleich oder besser ist und Tokens pro verifiziertem Task sinken.</text>
+
+    <rect x="80" y="610" width="1120" height="56" rx="14" fill="#0f172a"/>
+    <text x="112" y="646" font-size="18" font-weight="700" fill="#ffffff">Alpha-Status:</text>
+    <text x="238" y="646" font-size="18" fill="#e2e8f0">veroeffentlichbar auf GitHub, aber noch keine Stable- oder offizielle Codex-Integration</text>
+  </g>
+
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#64748b"/>
+    </marker>
+  </defs>
+</svg>

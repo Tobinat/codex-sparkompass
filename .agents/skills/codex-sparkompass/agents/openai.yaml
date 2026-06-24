@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex Sparkompass"
+  short_description: "Codex-Kontext prüfen und Prompts sparen"
+  default_prompt: "Use $codex-sparkompass to audit this repository and suggest a tighter Codex prompt."

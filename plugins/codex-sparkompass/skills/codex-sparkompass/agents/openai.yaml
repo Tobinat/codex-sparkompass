@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex Sparkompass"
+  short_description: "Verified context control for leaner Codex runs"
+  default_prompt: "Use $codex-sparkompass to select verified context, load evidence, and prepare a lean Codex run."

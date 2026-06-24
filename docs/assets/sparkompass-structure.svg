@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Sparkompass Struktur</title>
+  <desc id="desc">Architekturdiagramm der Sparkompass-Schichten von CLI bis Release-Audit.</desc>
+  <rect width="1280" height="720" fill="#f8fafc"/>
+  <text x="64" y="70" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="700" fill="#0f172a">Codex Sparkompass: Was steckt drin?</text>
+  <text x="64" y="105" font-family="Inter, Arial, sans-serif" font-size="18" fill="#475569">Lokale Context-Control-Plane fuer sparsamere, belegbare Codex-Workflows</text>
+
+  <g font-family="Inter, Arial, sans-serif">
+    <rect x="64" y="150" width="220" height="120" rx="14" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+    <text x="92" y="190" font-size="22" font-weight="700" fill="#1e3a8a">CLI</text>
+    <text x="92" y="222" font-size="16" fill="#1e40af">audit, pack, handoff</text>
+    <text x="92" y="247" font-size="16" fill="#1e40af">experiment, release-audit</text>
+
+    <rect x="340" y="150" width="220" height="120" rx="14" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/>
+    <text x="368" y="190" font-size="22" font-weight="700" fill="#14532d">Context Control</text>
+    <text x="368" y="222" font-size="16" fill="#166534">Plan, BOM, Evidence</text>
+    <text x="368" y="247" font-size="16" fill="#166534">Ablation, Slimming</text>
+
+    <rect x="616" y="150" width="220" height="120" rx="14" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+    <text x="644" y="190" font-size="22" font-weight="700" fill="#78350f">MCP + Plugin</text>
+    <text x="644" y="222" font-size="16" fill="#92400e">48 Tools, Skill</text>
+    <text x="644" y="247" font-size="16" fill="#92400e">Hook-Kandidat</text>
+
+    <rect x="892" y="150" width="260" height="120" rx="14" fill="#fae8ff" stroke="#a21caf" stroke-width="2"/>
+    <text x="920" y="190" font-size="22" font-weight="700" fill="#701a75">Evidenzplattform</text>
+    <text x="920" y="222" font-size="16" fill="#86198f">Usage, TaskOutcome</text>
+    <text x="920" y="247" font-size="16" fill="#86198f">Router, GatePath</text>
+
+    <path d="M284 210 H340" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
+    <path d="M560 210 H616" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
+    <path d="M836 210 H892" stroke="#64748b" stroke-width="3" marker-end="url(#arrow)"/>
+
+    <rect x="92" y="345" width="250" height="170" rx="14" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="120" y="385" font-size="21" font-weight="700" fill="#0f172a">Sparen</text>
+    <text x="120" y="420" font-size="16" fill="#334155">ContextPack</text>
+    <text x="120" y="448" font-size="16" fill="#334155">Handoff Receipt</text>
+    <text x="120" y="476" font-size="16" fill="#334155">PromptPreparation</text>
+
+    <rect x="390" y="345" width="250" height="170" rx="14" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="418" y="385" font-size="21" font-weight="700" fill="#0f172a">Qualitaet</text>
+    <text x="418" y="420" font-size="16" fill="#334155">Oracle</text>
+    <text x="418" y="448" font-size="16" fill="#334155">ShadowRun</text>
+    <text x="418" y="476" font-size="16" fill="#334155">TaskOutcome</text>
+
+    <rect x="688" y="345" width="250" height="170" rx="14" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="716" y="385" font-size="21" font-weight="700" fill="#0f172a">Messen</text>
+    <text x="716" y="420" font-size="16" fill="#334155">Codex JSONL Usage</text>
+    <text x="716" y="448" font-size="16" fill="#334155">RunManifest</text>
+    <text x="716" y="476" font-size="16" fill="#334155">Usage-Invarianten</text>
+
+    <rect x="986" y="345" width="202" height="170" rx="14" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="1014" y="385" font-size="21" font-weight="700" fill="#0f172a">Entscheiden</text>
+    <text x="1014" y="420" font-size="16" fill="#334155">bypass</text>
+    <text x="1014" y="448" font-size="16" fill="#334155">compact</text>
+    <text x="1014" y="476" font-size="16" fill="#334155">lazy / full</text>
+
+    <rect x="64" y="590" width="1124" height="56" rx="14" fill="#0f172a"/>
+    <text x="94" y="626" font-size="18" font-weight="700" fill="#ffffff">Release-Signal:</text>
+    <text x="250" y="626" font-size="18" fill="#e2e8f0">30/30 lokale Anforderungen, Package-Smoke, Plugin-Smoke, GatePath vorbereitet</text>
+  </g>
+
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#64748b"/>
+    </marker>
+  </defs>
+</svg>

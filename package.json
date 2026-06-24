@@ -1,0 +1,81 @@
+{
+  "name": "codex-sparkompass",
+  "version": "0.1.0",
+  "description": "Deutschsprachige Context-Control-Plane für sparsamere, belegbare Codex-Workflows.",
+  "type": "module",
+  "files": [
+    "bin/",
+    "src/",
+    "docs/",
+    "examples/",
+    "plugins/",
+    ".agents/plugins/marketplace.json",
+    ".agents/skills/codex-sparkompass/",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "INSTALL.md",
+    "README.md",
+    "SECURITY.md",
+    "LICENSE"
+  ],
+  "bin": {
+    "codex-sparkompass": "./bin/codex-sparkompass.mjs",
+    "sparkompass": "./bin/codex-sparkompass.mjs",
+    "codex-sparkompass-mcp": "./bin/codex-sparkompass-mcp.mjs",
+    "sparkompass-mcp": "./bin/codex-sparkompass-mcp.mjs"
+  },
+  "scripts": {
+    "audit": "node ./bin/codex-sparkompass.mjs audit .",
+    "recommend": "node ./bin/codex-sparkompass.mjs recommend . --goal \"Nächsten Codex-Lauf enger vorbereiten\"",
+    "dogfood": "node ./bin/codex-sparkompass.mjs dogfood . --fail-on-risk --min-saving 35 --min-anchors 75",
+    "benchmark": "node ./bin/codex-sparkompass.mjs benchmark .",
+    "scorecard": "node ./bin/codex-sparkompass.mjs scorecard .",
+    "evidence-audit": "node ./bin/codex-sparkompass.mjs evidence-audit . --goal \"Codex Sparkompass evidence audit\" --file src/context-plan.mjs",
+    "ablation-audit": "node ./bin/codex-sparkompass.mjs ablation-audit . --goal \"Codex Sparkompass ablation audit\" --file src/context-plan.mjs --expect buildContextPlan --max-units 120",
+    "slim": "node ./bin/codex-sparkompass.mjs slim . --goal \"Codex Sparkompass slimming plan\" --file src/context-plan.mjs --expect buildContextPlan --max-units 120 --max-moves 24",
+    "pilot": "node ./bin/codex-sparkompass.mjs pilot . --ledger-dir .sparkompass/pilot-run --max-pack-files 1",
+    "impact": "node ./bin/codex-sparkompass.mjs impact . --savings-ledger .sparkompass/pilot-run/savings-ledger.json --task-outcome-ledger .sparkompass/pilot-run/task-outcome-ledger.json --handoff-ledger .sparkompass/pilot-run/handoff-ledger.json --prompt-preparation-ledger .sparkompass/pilot-run/prompt-preparation-ledger.json",
+    "doctor-overhead": "node ./bin/codex-sparkompass.mjs doctor overhead . --profile standard",
+    "package-audit": "node ./bin/codex-sparkompass.mjs package-audit .",
+    "package-smoke": "node ./bin/codex-sparkompass.mjs package-smoke .",
+    "plugin-smoke": "node ./bin/codex-sparkompass.mjs plugin-smoke .",
+    "release-audit": "node ./bin/codex-sparkompass.mjs release-audit .",
+    "lint": "node --check ./bin/*.mjs && node --check ./src/*.mjs && node --check ./test/*.mjs && node --check ./plugins/codex-sparkompass/scripts/*.mjs",
+    "test": "node --test test/*.test.mjs",
+    "check": "npm run lint && npm test && npm run dogfood && npm run benchmark && npm run scorecard && npm run evidence-audit && npm run ablation-audit && npm run slim && npm run doctor-overhead && npm run package-audit && npm run package-smoke && npm run plugin-smoke && npm run release-audit",
+    "prepack": "npm run check"
+  },
+  "keywords": [
+    "codex",
+    "tokens",
+    "context-control",
+    "mcp",
+    "openai",
+    "usage",
+    "release-audit",
+    "ai",
+    "cli",
+    "german",
+    "prompting"
+  ],
+  "author": "Codex Sparkompass Contributors",
+  "license": "MIT",
+  "homepage": "https://github.com/Tobinat/codex-sparkompass#readme",
+  "bugs": {
+    "url": "https://github.com/Tobinat/codex-sparkompass/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tobinat/codex-sparkompass.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "acorn": "^8.17.0",
+    "acorn-walk": "^8.3.5"
+  }
+}

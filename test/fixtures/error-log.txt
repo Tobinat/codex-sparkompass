@@ -1,0 +1,18 @@
+2026-06-23T12:00:01Z INFO starting auth flow for user 42
+2026-06-23T12:00:02Z INFO loading src/auth/session.ts
+2026-06-23T12:00:03Z WARN retrying password reset callback
+2026-06-23T12:00:04Z ERROR AUTH_RESET_TOKEN_EXPIRED reset token expired immediately after password reset
+Stack trace:
+  at validateResetToken (src/auth/session.ts:44:11)
+  at completePasswordReset (src/auth/reset.ts:88:7)
+  at POST /api/auth/reset
+Expected:
+- User can log in after a successful password reset.
+- Done when: Auth reset test passes.
+Noise:
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+Repeated noise line that should not survive compression.
+Repeated noise line that should not survive compression.
+Repeated noise line that should not survive compression.
+Repeated noise line that should not survive compression.
+Repeated noise line that should not survive compression.

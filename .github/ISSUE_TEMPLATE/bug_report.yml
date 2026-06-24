@@ -1,0 +1,43 @@
+name: Fehler melden
+description: Melde ein reproduzierbares Problem in Codex Sparkompass.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke fuer den Report. Bitte keine Secrets, Tokens oder privaten Repository-Inhalte posten.
+  - type: input
+    id: version
+    attributes:
+      label: Version oder Commit
+      placeholder: v0.1.0-alpha oder Commit-SHA
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Befehl oder Workflow
+      description: Welcher Befehl, MCP-Tool-Aufruf oder Plugin-Flow ist betroffen?
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Erwartetes Verhalten
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Tatsächliches Verhalten
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Checks
+      description: Welche Checks hast du ausgeführt?
+      placeholder: npm test, npm run release-audit, npm run package-audit

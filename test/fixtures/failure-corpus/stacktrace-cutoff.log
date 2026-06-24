@@ -1,0 +1,31 @@
+2026-06-23T14:02:31.482Z ERROR E_AUTH_104 token refresh failed
+first failing frame: src/auth/token_service.py:117
+caused by: MissingKeyError("refresh_token")
+last successful frame: src/auth/session_store.py:52
+repeated 68 times before cancellation
+Done when: refresh does not retry without refresh_token
+INFO unrelated request finished
+INFO unrelated request finished
+INFO unrelated request finished
+INFO unrelated request finished
+INFO unrelated request finished
+INFO unrelated request finished
+INFO unrelated request finished
+DEBUG cache warmup finished for tenant demo-a
+DEBUG cache warmup finished for tenant demo-b
+DEBUG metrics heartbeat emitted
+DEBUG metrics heartbeat emitted
+DEBUG metrics heartbeat emitted
+DEBUG worker idle checkpoint
+DEBUG worker idle checkpoint
+DEBUG worker idle checkpoint
+DEBUG unrelated health probe passed
+DEBUG unrelated health probe passed
+DEBUG unrelated health probe passed
+DEBUG unrelated health probe passed
+DEBUG unrelated health probe passed
+DEBUG unrelated health probe passed
+DEBUG unrelated health probe passed
+DEBUG unrelated health probe passed
+DEBUG unrelated health probe passed
+DEBUG unrelated health probe passed

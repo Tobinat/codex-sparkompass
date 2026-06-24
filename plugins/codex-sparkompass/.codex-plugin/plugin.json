@@ -1,0 +1,35 @@
+{
+  "name": "codex-sparkompass",
+  "version": "0.1.0",
+  "description": "Token-saving context compression and prompt preparation for Codex.",
+  "author": {
+    "name": "Codex Sparkompass Contributors"
+  },
+  "license": "MIT",
+  "keywords": [
+    "codex",
+    "tokens",
+    "compression",
+    "prompting",
+    "german"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Codex Sparkompass",
+    "shortDescription": "Verified context control and token-saving preparation for Codex.",
+    "longDescription": "Codex Sparkompass helps Codex users reduce avoidable context by auditing repositories, building semantic inventories, creating verified ContextPacks, and exposing MCP tools for targeted lookup, source evidence, cache, and delta context.",
+    "developerName": "Codex Sparkompass Contributors",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "MCP",
+      "Hooks"
+    ],
+    "defaultPrompt": [
+      "Use Codex Sparkompass to prepare this Codex run.",
+      "Create a verified ContextPack for this log.",
+      "Build a semantic inventory for this repo."
+    ]
+  }
+}

@@ -1,0 +1,14 @@
+Ziel:
+Behebe den Login-Fehler, bei dem gültige Nutzer nach dem Passwort-Reset abgewiesen werden.
+
+Relevanter Kontext:
+- Datei: src/auth/session.ts
+- Datei: test/auth/session.test.ts
+- Fehlerausgabe: "reset token expired" direkt nach erfolgreichem Reset
+
+Grenzen:
+- Keine Änderungen am Datenbankschema.
+- Keine neue Produktionsabhängigkeit.
+
+Done when:
+- Der bestehende Login-Test und ein neuer Reset-Test laufen grün.

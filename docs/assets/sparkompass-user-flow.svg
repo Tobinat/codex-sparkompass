@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Sparkompass Nutzerfluss</title>
+  <desc id="desc">Zeigt, wann Sparkompass beim Vorbereiten eines Codex-Laufs eingreift.</desc>
+  <rect width="1280" height="720" fill="#fbfbf8"/>
+  <text x="64" y="72" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="700" fill="#111827">Wann passiert was?</text>
+  <text x="64" y="108" font-family="Inter, Arial, sans-serif" font-size="18" fill="#4b5563">Vom User-Ziel bis zur Router-Entscheidung</text>
+
+  <g font-family="Inter, Arial, sans-serif" font-size="16">
+    <line x1="130" y1="250" x2="1150" y2="250" stroke="#94a3b8" stroke-width="4"/>
+    <g>
+      <circle cx="130" cy="250" r="38" fill="#e0f2fe" stroke="#0284c7" stroke-width="3"/>
+      <text x="118" y="258" font-size="24" font-weight="700" fill="#075985">1</text>
+      <text x="82" y="330" font-size="18" font-weight="700" fill="#0f172a">Ziel</text>
+      <text x="65" y="360" fill="#334155">User nennt Aufgabe</text>
+    </g>
+    <g>
+      <circle cx="300" cy="250" r="38" fill="#dbeafe" stroke="#2563eb" stroke-width="3"/>
+      <text x="288" y="258" font-size="24" font-weight="700" fill="#1e3a8a">2</text>
+      <text x="250" y="330" font-size="18" font-weight="700" fill="#0f172a">Preflight</text>
+      <text x="230" y="360" fill="#334155">Repo scannen</text>
+      <text x="230" y="386" fill="#334155">AGENTS pruefen</text>
+    </g>
+    <g>
+      <circle cx="470" cy="250" r="38" fill="#dcfce7" stroke="#16a34a" stroke-width="3"/>
+      <text x="458" y="258" font-size="24" font-weight="700" fill="#14532d">3</text>
+      <text x="425" y="330" font-size="18" font-weight="700" fill="#0f172a">Packen</text>
+      <text x="393" y="360" fill="#334155">kleiner Kontext</text>
+      <text x="393" y="386" fill="#334155">wichtige Fakten</text>
+    </g>
+    <g>
+      <circle cx="640" cy="250" r="38" fill="#fef3c7" stroke="#d97706" stroke-width="3"/>
+      <text x="628" y="258" font-size="24" font-weight="700" fill="#78350f">4</text>
+      <text x="592" y="330" font-size="18" font-weight="700" fill="#0f172a">Pruefen</text>
+      <text x="558" y="360" fill="#334155">Oracle, Shadow</text>
+      <text x="558" y="386" fill="#334155">TaskOutcome</text>
+    </g>
+    <g>
+      <circle cx="810" cy="250" r="38" fill="#fce7f3" stroke="#db2777" stroke-width="3"/>
+      <text x="798" y="258" font-size="24" font-weight="700" fill="#831843">5</text>
+      <text x="766" y="330" font-size="18" font-weight="700" fill="#0f172a">Messen</text>
+      <text x="732" y="360" fill="#334155">Codex JSONL</text>
+      <text x="732" y="386" fill="#334155">RunManifest</text>
+    </g>
+    <g>
+      <circle cx="980" cy="250" r="38" fill="#ede9fe" stroke="#7c3aed" stroke-width="3"/>
+      <text x="968" y="258" font-size="24" font-weight="700" fill="#4c1d95">6</text>
+      <text x="936" y="330" font-size="18" font-weight="700" fill="#0f172a">Router</text>
+      <text x="900" y="360" fill="#334155">bypass, compact</text>
+      <text x="900" y="386" fill="#334155">lazy oder full</text>
+    </g>
+    <g>
+      <circle cx="1150" cy="250" r="38" fill="#fee2e2" stroke="#dc2626" stroke-width="3"/>
+      <text x="1138" y="258" font-size="24" font-weight="700" fill="#7f1d1d">7</text>
+      <text x="1110" y="330" font-size="18" font-weight="700" fill="#0f172a">Codex</text>
+      <text x="1068" y="360" fill="#334155">enger Start</text>
+      <text x="1068" y="386" fill="#334155">Nachladen bei Bedarf</text>
+    </g>
+
+    <rect x="116" y="500" width="500" height="92" rx="14" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="146" y="536" font-size="20" font-weight="700" fill="#0f172a">Live-Nutzung</text>
+    <text x="146" y="566" fill="#334155">Schneller Start: audit, recommend, handoff, router</text>
+
+    <rect x="664" y="500" width="500" height="92" rx="14" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="694" y="536" font-size="20" font-weight="700" fill="#0f172a">Beweis-Labor</text>
+    <text x="694" y="566" fill="#334155">ExperimentRun, Usage-Invarianten, Release-Audit</text>
+  </g>
+</svg>
