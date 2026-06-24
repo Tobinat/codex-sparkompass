@@ -4,11 +4,23 @@
 
 | Version | Status |
 | --- | --- |
-| `v0.1.0-alpha` | Technical Preview |
+| `v0.1.0-alpha.0` | Technical Preview |
 
 ## Sicherheit melden
 
 Bitte melde Sicherheitsprobleme nicht öffentlich als normales Issue, wenn sie private Repository-Inhalte, Secrets, Token, Credentials oder gefährliche Ausführungspfade offenlegen könnten.
+
+## Privater Meldeweg
+
+Bitte verwende GitHub Private Vulnerability Reporting:
+
+```text
+Security -> Advisories -> Report a vulnerability
+```
+
+Falls dieser private Meldeweg im Repository noch nicht sichtbar ist, aktiviere ihn in GitHub unter **Settings -> Security -> Advanced Security -> Private vulnerability reporting** oder kontaktiere den Maintainer direkt über GitHub.
+
+Eröffne für mögliche Secrets, Pfadlecks oder gefährliche Ausführungspfade kein öffentliches Issue.
 
 Für diese Alpha-Version gilt:
 

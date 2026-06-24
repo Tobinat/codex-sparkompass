@@ -225,8 +225,8 @@ describe("Sparkompass MCP tools", () => {
     assert.equal(routerDecisionTool.inputSchema.properties.experimentFile.type, "string");
     assert.equal(routerDecisionTool.inputSchema.properties.requireQualityEvidence.type, "boolean");
     const packageAuditTool = MCP_TOOLS.find((tool) => tool.name === "sparkompass_package_audit");
-    assert.equal(packageAuditTool.inputSchema.properties.maxPackageSizeKb.default, 400);
-    assert.equal(packageAuditTool.inputSchema.properties.maxUnpackedSizeKb.default, 1500);
+    assert.equal(packageAuditTool.inputSchema.properties.maxPackageSizeKb.default, 1000);
+    assert.equal(packageAuditTool.inputSchema.properties.maxUnpackedSizeKb.default, 3000);
     assert.equal(packageAuditTool.inputSchema.properties.maxFiles.default, 120);
     const packageInstallSmokeTool = MCP_TOOLS.find((tool) => tool.name === "sparkompass_package_install_smoke");
     assert.equal(packageInstallSmokeTool.inputSchema.properties.keepTemp.default, false);

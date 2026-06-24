@@ -2,7 +2,7 @@
 
 ![Codex Sparkompass Struktur](docs/assets/sparkompass-structure.svg)
 
-**Status:** `v0.1.0-alpha` Technical Preview.
+**Status:** `v0.1.0-alpha.0` Technical Preview.
 
 Codex Sparkompass ist eine lokale Context-Control-Plane für Codex-Workflows. Das Tool hilft, vor einem Codex-Lauf weniger unnötigen Kontext zu senden, wichtige Fakten zu schützen, Originalstellen später gezielt nachzuladen und Einsparungen mit Qualitätsgates zu verbinden.
 
@@ -29,7 +29,7 @@ Codex wird teuer und unübersichtlich, wenn ganze Repos, lange Logs, große READ
 | Lokaler Codex A/B-Lauf, nicht gecachter Input | `16.051` weniger, `42%` Ersparnis |
 | Benchmark-Ersparnis | `55%` |
 | Pilot-Startkontext-Ersparnis | `49%` |
-| Pilot-sendbare-Prompt-Ersparnis | `23%` |
+| Pilot-sendbare-Prompt-Ersparnis | `24%` |
 
 Die Codex-Zahlen stammen aus dokumentierten `codex exec --json` Usage-Events und sind in [docs/official-codex-usage-evidence.md](docs/official-codex-usage-evidence.md) beschrieben. Sie sind ein lokaler Laufbeleg, keine Rechnung und kein allgemeines Sparversprechen.
 
@@ -39,7 +39,7 @@ Die Codex-Zahlen stammen aus dokumentierten `codex exec --json` Usage-Events und
 git clone https://github.com/Tobinat/codex-sparkompass.git
 cd codex-sparkompass
 npm ci
-npm run check
+node ./bin/codex-sparkompass.mjs doctor
 node ./bin/codex-sparkompass.mjs audit .
 ```
 
@@ -52,6 +52,12 @@ sparkompass audit .
 ```
 
 Mehr Installationswege stehen in [INSTALL.md](INSTALL.md).
+
+Vollständige Maintainer-Verifikation:
+
+```bash
+npm run check
+```
 
 ## Häufige Nutzung
 
@@ -114,6 +120,26 @@ Nicht enthalten:
 - kein Upload von Repo-Inhalten
 - kein automatisches Umschreiben des Codex-Prompts
 - keine Behauptung, offiziell in Codex integriert zu sein
+
+## Codex-Plugin lokal hinzufügen
+
+In Codex kann das Repo als Git-Marketplace hinzugefügt werden:
+
+```bash
+codex plugin marketplace add Tobinat/codex-sparkompass --ref main
+```
+
+In der Desktop-App entspricht das:
+
+- Quelle: `Tobinat/codex-sparkompass`
+- Git-Ref: `main`
+- Sparse-Pfade: leer lassen oder:
+  ```text
+  .agents/plugins
+  plugins/codex-sparkompass
+  ```
+
+Der Plugin-Kandidat enthält ein eigenständiges `dist`-Bundle, den Skill, MCP-Werkzeuge und einen sanften UserPromptSubmit-Hook. Das ist eine lokale/persönliche Plugin-Installation, keine Veröffentlichung im offiziellen Plugin Directory.
 
 ## Release-Status
 

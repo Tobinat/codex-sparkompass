@@ -1,0 +1,19 @@
+{
+  "schema": "TaskOutcomeReceiptV1",
+  "gate": {
+    "status": "verified-task-outcome",
+    "verified": true,
+    "reasons": []
+  },
+  "command": "codex exec --json -C . --sandbox read-only - < raw-prompt.txt",
+  "expected_exit_code": 0,
+  "exit_code": 0,
+  "output_oracle": {
+    "status": "verified",
+    "expected_facts": [
+      "answer completed"
+    ],
+    "missing_facts": []
+  },
+  "redaction": "Private prompt and response content removed; usage fields kept."
+}

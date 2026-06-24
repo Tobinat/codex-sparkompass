@@ -1,0 +1,3 @@
+REDACTED RAW README PROMPT
+
+Dieser Platzhalter ersetzt den ursprünglichen privaten Prompt. Die zugehörige Usage-Datei enthält nur die ungefährlichen Codex-Usage-Felder des gemessenen Laufs.

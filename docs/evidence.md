@@ -6,6 +6,8 @@ Diese Seite fasst die sichtbaren Messwerte für die Alpha-Version zusammen. Alle
 
 Quelle: [official-codex-usage-evidence.md](official-codex-usage-evidence.md)
 
+Redigierte Artefakte zum Nachrechnen: [`evidence/case-studies/readme-ab-v1`](../evidence/case-studies/readme-ab-v1/)
+
 | Messwert | Raw README Prompt | Sparkompass Compact Prompt | Ersparnis |
 | --- | ---: | ---: | ---: |
 | Gesamt-Tokens | `40.758` | `32.341` | `8.417` (`21%`) |
@@ -30,7 +32,7 @@ Gate: `verified-codex-official-usage-comparison`
 | Dogfood durchschnittliche Ersparnis | `41%` |
 | Dogfood kritische Anker-Erhaltung | `100%` |
 | Pilot-Startkontext-Ersparnis | `49%` |
-| Pilot-sendbare-Prompt-Ersparnis | `23%` |
+| Pilot-sendbare-Prompt-Ersparnis | `24%` |
 
 ## Release-Gates
 

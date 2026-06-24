@@ -1,0 +1,38 @@
+{
+  "schema": "SparkompassRunManifestV1",
+  "case_study": "readme-ab-v1",
+  "redaction": "Public manifest with private prompt and local path details removed.",
+  "variants": [
+    {
+      "name": "raw",
+      "usage_file": "raw-usage.jsonl",
+      "task_outcome": "raw-task-outcome.json",
+      "official_usage": {
+        "input_tokens": 40657,
+        "cached_input_tokens": 2432,
+        "output_tokens": 101,
+        "reasoning_output_tokens": 94,
+        "total_tokens": 40758,
+        "total_tokens_formula": "input_tokens + output_tokens"
+      }
+    },
+    {
+      "name": "compact",
+      "usage_file": "compact-usage.jsonl",
+      "task_outcome": "compact-task-outcome.json",
+      "official_usage": {
+        "input_tokens": 32286,
+        "cached_input_tokens": 10112,
+        "output_tokens": 55,
+        "reasoning_output_tokens": 48,
+        "total_tokens": 32341,
+        "total_tokens_formula": "input_tokens + output_tokens"
+      }
+    }
+  ],
+  "usage_invariants": {
+    "cached_input_tokens_lte_input_tokens": true,
+    "reasoning_output_tokens_lte_output_tokens": true,
+    "total_tokens_eq_input_plus_output": true
+  }
+}

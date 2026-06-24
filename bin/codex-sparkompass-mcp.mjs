@@ -5,7 +5,7 @@ import { getMcpToolsForProfile, normalizeToolProfileName } from "../src/tool-pro
 
 const SERVER_INFO = {
   name: "codex-sparkompass",
-  version: "0.1.0"
+  version: "0.1.0-alpha.0"
 };
 
 const ACTIVE_TOOL_PROFILE = normalizeToolProfileName(process.env.SPARKOMPASS_TOOL_PROFILE || process.env.SPARKOMPASS_MCP_TOOL_PROFILE || "debug");

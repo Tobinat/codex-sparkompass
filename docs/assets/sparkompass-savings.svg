@@ -37,8 +37,8 @@
 
     <text x="104" y="602" font-size="16" fill="#475569">sendbarer Prompt</text>
     <rect x="320" y="586" width="560" height="24" rx="4" fill="#e5e7eb"/>
-    <rect x="320" y="586" width="129" height="24" rx="4" fill="#334155"/>
-    <text x="900" y="605" font-size="16" font-weight="700" fill="#111827">23%</text>
+    <rect x="320" y="586" width="134" height="24" rx="4" fill="#334155"/>
+    <text x="900" y="605" font-size="16" font-weight="700" fill="#111827">24%</text>
 
     <text x="72" y="662" font-size="14" fill="#64748b">Quelle: docs/official-codex-usage-evidence.md, Dogfood-, Benchmark-, Pilot- und Release-Audit-Ausgaben. Tokenwerte sind lokale Messwerte oder Schätzungen.</text>
   </g>

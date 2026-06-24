@@ -5,13 +5,35 @@ on:
   pull_request:
 
 jobs:
-  test:
+  release-check:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [22, 24]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: ${{ matrix.node-version }}
       - run: npm ci
       - run: npm run check
       - run: npm pack --dry-run
+
+  platform-smoke:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+        node-version: [22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: npm ci
+      - run: npm run build:plugin
+      - run: npm run lint
+      - run: node ./bin/codex-sparkompass.mjs doctor
+      - run: npm run package-audit

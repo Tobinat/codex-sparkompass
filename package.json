@@ -1,12 +1,14 @@
 {
   "name": "codex-sparkompass",
-  "version": "0.1.0",
+  "version": "0.1.0-alpha.0",
   "description": "Deutschsprachige Context-Control-Plane für sparsamere, belegbare Codex-Workflows.",
   "type": "module",
   "files": [
     "bin/",
     "src/",
+    "scripts/",
     "docs/",
+    "evidence/",
     "examples/",
     "plugins/",
     ".agents/plugins/marketplace.json",
@@ -25,6 +27,7 @@
     "sparkompass-mcp": "./bin/codex-sparkompass-mcp.mjs"
   },
   "scripts": {
+    "build:plugin": "node ./scripts/build-plugin-dist.mjs",
     "audit": "node ./bin/codex-sparkompass.mjs audit .",
     "recommend": "node ./bin/codex-sparkompass.mjs recommend . --goal \"Nächsten Codex-Lauf enger vorbereiten\"",
     "dogfood": "node ./bin/codex-sparkompass.mjs dogfood . --fail-on-risk --min-saving 35 --min-anchors 75",
@@ -40,9 +43,9 @@
     "package-smoke": "node ./bin/codex-sparkompass.mjs package-smoke .",
     "plugin-smoke": "node ./bin/codex-sparkompass.mjs plugin-smoke .",
     "release-audit": "node ./bin/codex-sparkompass.mjs release-audit .",
-    "lint": "node --check ./bin/*.mjs && node --check ./src/*.mjs && node --check ./test/*.mjs && node --check ./plugins/codex-sparkompass/scripts/*.mjs",
+    "lint": "node --check ./bin/*.mjs && node --check ./src/*.mjs && node --check ./scripts/*.mjs && node --check ./test/*.mjs && node --check ./plugins/codex-sparkompass/scripts/*.mjs && node --check ./plugins/codex-sparkompass/dist/*.mjs",
     "test": "node --test test/*.test.mjs",
-    "check": "npm run lint && npm test && npm run dogfood && npm run benchmark && npm run scorecard && npm run evidence-audit && npm run ablation-audit && npm run slim && npm run doctor-overhead && npm run package-audit && npm run package-smoke && npm run plugin-smoke && npm run release-audit",
+    "check": "npm run build:plugin && npm run lint && npm test && npm run dogfood && npm run benchmark && npm run scorecard && npm run evidence-audit && npm run ablation-audit && npm run slim && npm run doctor-overhead && npm run package-audit && npm run package-smoke && npm run plugin-smoke && npm run release-audit",
     "prepack": "npm run check"
   },
   "keywords": [
@@ -72,10 +75,13 @@
     "access": "public"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "dependencies": {
     "acorn": "^8.17.0",
     "acorn-walk": "^8.3.5"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1"
   }
 }

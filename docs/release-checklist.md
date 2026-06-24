@@ -73,6 +73,7 @@ npm pack --dry-run
 - `PackageDryRunAuditV1` was built from `npm pack --dry-run --json --ignore-scripts`
 - package name and version match `package.json`
 - required CLI, MCP, docs, skill, plugin, hook, and example paths are included
+- plugin `dist` bundle and redacted evidence case-study paths are included
 - test fixtures, caches, private files, generated tarballs, and local ledgers are excluded
 - CLI and plugin bridge scripts are executable
 - package size, unpacked size, and file count remain under the configured limits
@@ -94,6 +95,8 @@ npm pack --dry-run
 - the copied MCP bridge serves `tools/list`
 - the copied MCP bridge can call `sparkompass_lookup` through `tools/call`
 - the simulated cache-installed plugin bridge can run CLI and MCP lookup against the requested repo via `rootPath`/`repoRoot`
+- the Git-marketplace smoke runs from a fresh `CODEX_HOME` without a global `sparkompass` CLI in `PATH`
+- the Git-marketplace smoke verifies MCP `tools/list`, `sparkompass_lookup`, hook execution through `PLUGIN_ROOT`, and prompt redaction
 - the copied UserPromptSubmit hook emits an advisory for a large prompt
 - the hook output does not echo sensitive prompt anchors
 
@@ -203,7 +206,8 @@ npm pack --dry-run
 - `sparkompass_shadow_compare` verifies a no-regression run against full context, supports `expectRegex`, and detects a fixture regression
 - semantic cache lookup returns a hit for matching adaptive policy, dependencies, tool fingerprint, oracle, and ContextPack expectations
 - semantic cache lookup returns a miss for changed dependency files, mismatched tool fingerprint, mismatched oracle, mismatched ContextPack expectations, or below-policy query similarity
-- `plugins/codex-sparkompass/scripts/sparkompass-mcp.mjs` starts and serves `tools/list`
+- `plugins/codex-sparkompass/dist/sparkompass-mcp.mjs` starts and serves `tools/list`
+- `plugins/codex-sparkompass/scripts/sparkompass-mcp.mjs` remains available as the local bridge fallback
 - `plugins/codex-sparkompass/hooks/hooks.json` wires `UserPromptSubmit` to `sparkompass-user-prompt-submit.mjs`
 - `sparkompass-user-prompt-submit.mjs` emits `SparkompassUserPromptHookAdvisoryV1` in JSON mode, stays quiet for small prompts, and does not echo prompt contents in human advisory mode
 
@@ -288,10 +292,10 @@ As of this checkpoint:
 - package install smoke gate: verified-package-install-smoke
 - plugin install smoke gate: verified-plugin-install-smoke
 - pilot PromptPreparationLedger: 1/1 verified
-- pilot context tokens per verified task: 927
+- pilot context tokens per verified task: 1026
 - pilot start-context savings: 49%
-- pilot sendable prompt savings: 23%
-- impact sendable prompt savings: 23%
+- pilot sendable prompt savings: 24%
+- impact sendable prompt savings: 24%
 - release-audit requirements: 30/30
 - release-audit ExperimentPlan: verified-experiment-plan, 12 planned runs
 - release-audit ExperimentScript: verified-experiment-script, 12 planned runs, executable
@@ -309,9 +313,9 @@ As of this checkpoint:
 - MCP tools: 48
 - DoctorOverhead gate: verified-doctor-overhead
 - DoctorOverhead standard profile: 20/48 MCP tools, about 11,716 estimated catalog tokens saved
-- package size: 263.7 kB
-- unpacked size: 1209.1 kB
-- package files: 95
+- package size: 601.3 kB
+- unpacked size: 2519.4 kB
+- package files: 107
 - benchmark average saving: 55%
 - benchmark tokens per successful case: 83
 - benchmark p95 saved tokens: 163

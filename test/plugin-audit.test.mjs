@@ -17,11 +17,13 @@ describe("PluginInstallSmokeAuditV1", () => {
     assert.equal(audit.installed.cache_cli_bridge_ok, true);
     assert.equal(audit.installed.cache_mcp_bridge_ok, true);
     assert.equal(audit.installed.cache_mcp_tool_call_ok, true);
+    assert.equal(audit.installed.git_marketplace_ok, true);
     assert.equal(audit.installed.hook_advisory_ok, true);
     assert.equal(audit.installed.hook_redacts_sensitive_anchor, true);
     assert.ok(audit.installed.mcp_tool_count >= 42);
     assert.ok(audit.installed.mcp_lookup_selected > 0);
     assert.ok(audit.installed.cache_mcp_lookup_selected > 0);
+    assert.ok(audit.installed.git_mcp_lookup_selected > 0);
     assert.equal(audit.installed.mcp_required_tools_present, true);
     assert.ok(audit.checks.every((item) => item.status === "verified"));
     assert.equal(audit.temp.retained, false);
@@ -31,6 +33,7 @@ describe("PluginInstallSmokeAuditV1", () => {
     assert.match(report, /Gate: verified-plugin-install-smoke/);
     assert.match(report, /MCP-Tool-Call: ok/);
     assert.match(report, /Cache-Install-Bridge: ok/);
+    assert.match(report, /Git-Marketplace-Smoke: ok/);
   });
 
   it("CLI plugin-smoke emits JSON and exits successfully", () => {
@@ -54,8 +57,10 @@ describe("PluginInstallSmokeAuditV1", () => {
     assert.equal(payload.installed.cache_cli_bridge_ok, true);
     assert.equal(payload.installed.cache_mcp_bridge_ok, true);
     assert.equal(payload.installed.cache_mcp_tool_call_ok, true);
+    assert.equal(payload.installed.git_marketplace_ok, true);
     assert.ok(payload.installed.mcp_lookup_selected > 0);
     assert.ok(payload.installed.cache_mcp_lookup_selected > 0);
+    assert.ok(payload.installed.git_mcp_lookup_selected > 0);
     assert.equal(payload.installed.hook_advisory_ok, true);
   });
 });

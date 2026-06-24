@@ -15,7 +15,9 @@ Diese Seite dokumentiert einen echten lokalen Codex-A/B-Lauf für Sparkompass. Z
 Baseline mit Rohkontext:
 
 ```bash
-/Applications/Codex.app/Contents/Resources/codex \
+CODEX_BIN="${CODEX_BIN:-codex}"
+
+"$CODEX_BIN" \
   --ask-for-approval never \
   exec --json \
   -C . \
@@ -27,7 +29,9 @@ Baseline mit Rohkontext:
 Optimierter Lauf mit Sparkompass-Prompt:
 
 ```bash
-/Applications/Codex.app/Contents/Resources/codex \
+CODEX_BIN="${CODEX_BIN:-codex}"
+
+"$CODEX_BIN" \
   --ask-for-approval never \
   exec --json \
   -C . \
@@ -92,3 +96,9 @@ Die Aussage bleibt bewusst eng:
 - Es ist keine offizielle Rechnung, kein Preisrechner und keine Workspace-Abrechnung.
 - Der Vergleich ist nur belastbar, wenn Aufgabe, Modell, Workspace, Sandbox und Laufbedingungen vergleichbar sind.
 - `.sparkompass/live` bleibt lokal ignoriert; für veröffentlichbare Nachvollziehbarkeit stehen hier Kommandos, Gates und Rohdaten-Hashes.
+
+Eine redigierte, veröffentlichbare Fallstudie mit ungefährlichen Usage-JSONL-Dateien liegt unter:
+
+```text
+evidence/case-studies/readme-ab-v1/
+```

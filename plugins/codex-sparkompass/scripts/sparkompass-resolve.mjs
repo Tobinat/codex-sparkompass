@@ -8,6 +8,11 @@ const SCRIPT_NAMES = {
   mcp: "codex-sparkompass-mcp.mjs"
 };
 
+const DIST_SCRIPT_NAMES = {
+  cli: "sparkompass.mjs",
+  mcp: "sparkompass-mcp.mjs"
+};
+
 const ENV_NAMES = {
   cli: "SPARKOMPASS_CLI",
   mcp: "SPARKOMPASS_MCP"
@@ -15,14 +20,18 @@ const ENV_NAMES = {
 
 export function resolveSparkompassScript(kind, metaUrl, options = {}) {
   const scriptName = SCRIPT_NAMES[kind];
+  const distScriptName = DIST_SCRIPT_NAMES[kind];
   const envName = ENV_NAMES[kind];
   if (!scriptName || !envName) throw new Error(`Unknown Sparkompass script kind: ${kind}`);
 
   const cwd = options.cwd || process.cwd();
   const env = options.env || process.env;
   const scriptDir = path.dirname(fileURLToPath(metaUrl));
+  const pluginRoot = resolvePluginRoot(scriptDir, env);
   const candidates = [
     env[envName],
+    pluginRoot ? path.join(pluginRoot, "dist", distScriptName) : "",
+    path.resolve(scriptDir, "../dist", distScriptName),
     path.resolve(scriptDir, "../../../bin", scriptName),
     path.resolve(cwd, "bin", scriptName),
     ...marketplaceCandidates(scriptDir, scriptName, env)
@@ -32,6 +41,14 @@ export function resolveSparkompassScript(kind, metaUrl, options = {}) {
     script: candidates.find((candidate) => fs.existsSync(candidate)) || null,
     candidates
   };
+}
+
+function resolvePluginRoot(scriptDir, env) {
+  return [
+    env.PLUGIN_ROOT,
+    env.CLAUDE_PLUGIN_ROOT,
+    path.resolve(scriptDir, "..")
+  ].find(Boolean);
 }
 
 function marketplaceCandidates(scriptDir, scriptName, env) {

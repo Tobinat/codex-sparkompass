@@ -9,6 +9,7 @@ describe("codex-sparkompass plugin", () => {
     const marketplace = JSON.parse(fs.readFileSync(".agents/plugins/marketplace.json", "utf8"));
 
     assert.equal(manifest.name, "codex-sparkompass");
+    assert.equal(manifest.version, "0.1.0-alpha.0");
     assert.equal(manifest.skills, "./skills/");
     assert.equal(manifest.mcpServers, "./.mcp.json");
     assert.equal(manifest.interface.displayName, "Codex Sparkompass");
@@ -19,16 +20,19 @@ describe("codex-sparkompass plugin", () => {
 
     const mcp = JSON.parse(fs.readFileSync("plugins/codex-sparkompass/.mcp.json", "utf8"));
     assert.equal(mcp.mcpServers.sparkompass.command, "node");
-    assert.deepEqual(mcp.mcpServers.sparkompass.args, ["./scripts/sparkompass-mcp.mjs"]);
+    assert.deepEqual(mcp.mcpServers.sparkompass.args, ["./dist/sparkompass-mcp.mjs"]);
 
     const hooks = JSON.parse(fs.readFileSync("plugins/codex-sparkompass/hooks/hooks.json", "utf8"));
     const promptHook = hooks.hooks.UserPromptSubmit[0].hooks[0];
     assert.equal(promptHook.type, "command");
+    assert.match(promptHook.command, /\$\{PLUGIN_ROOT\}/);
     assert.match(promptHook.command, /sparkompass-user-prompt-submit\.mjs/);
     assert.equal(promptHook.timeout, 5);
 
     const entry = marketplace.plugins.find((plugin) => plugin.name === "codex-sparkompass");
     assert.ok(entry);
+    assert.equal(marketplace.name, "codex-sparkompass");
+    assert.equal(marketplace.interface.displayName, "Codex Sparkompass");
     assert.equal(entry.source.path, "./plugins/codex-sparkompass");
     assert.equal(entry.policy.installation, "AVAILABLE");
     assert.equal(entry.policy.authentication, "ON_INSTALL");

@@ -1,0 +1,3 @@
+REDACTED SPARKOMPASS COMPACT PROMPT
+
+Dieser Platzhalter ersetzt den ursprünglichen kompakten Prompt. Die zugehörige Usage-Datei enthält nur die ungefährlichen Codex-Usage-Felder des gemessenen Laufs.

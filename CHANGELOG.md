@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.1.0-alpha
+## v0.1.0-alpha.0
 
 Technical Preview für GitHub.
 
@@ -16,6 +16,9 @@ Technical Preview für GitHub.
 - Tool-Profile `minimal`, `standard`, `benchmark`, `release`, `debug`
 - Gekürzte README; ausführliche Nutzung und Messwerte liegen in `docs/usage.md` und `docs/evidence.md`
 - Überarbeitete SVG-Diagramme mit Umlauten und eigenem Einsparungsdiagramm
+- Eigenständiges Plugin-`dist`-Bundle für Git-Marketplace-Installationen ohne globale `sparkompass`-CLI
+- Verschärfter Plugin-Smoke mit Git-Marketplace-Cache, Hook-Ausführung über `PLUGIN_ROOT` und Prompt-Redaktion
+- Redigiertes A/B-Evidence-Bundle unter `evidence/case-studies/readme-ab-v1`
 - Release-Audit mit `30/30` lokalen Anforderungen
 - `SparkompassGatePathV1` als Pfad von offizieller A/B-Usage-Evidenz zu `quality-noninferior` und vorbereitetem `verified-end-to-end-noninferior`
 

@@ -17,6 +17,7 @@ const REQUIRED_PACKAGE_PATHS = [
   "SECURITY.md",
   "bin/codex-sparkompass.mjs",
   "bin/codex-sparkompass-mcp.mjs",
+  "scripts/build-plugin-dist.mjs",
   "docs/assets/sparkompass-structure.svg",
   "docs/assets/sparkompass-user-flow.svg",
   "docs/assets/sparkompass-release-gates.svg",
@@ -24,7 +25,11 @@ const REQUIRED_PACKAGE_PATHS = [
   "docs/evidence.md",
   "docs/usage.md",
   "docs/publishing.md",
-  "docs/releases/v0.1.0-alpha.md",
+  "docs/releases/v0.1.0-alpha.0.md",
+  "evidence/case-studies/readme-ab-v1/README.md",
+  "evidence/case-studies/readme-ab-v1/raw-usage.jsonl",
+  "evidence/case-studies/readme-ab-v1/compact-usage.jsonl",
+  "evidence/case-studies/readme-ab-v1/comparison.json",
   "src/release-audit.mjs",
   "src/mcp-tools.mjs",
   "src/plugin-audit.mjs",
@@ -36,6 +41,8 @@ const REQUIRED_PACKAGE_PATHS = [
   "plugins/codex-sparkompass/.codex-plugin/plugin.json",
   "plugins/codex-sparkompass/.mcp.json",
   "plugins/codex-sparkompass/hooks/hooks.json",
+  "plugins/codex-sparkompass/dist/sparkompass.mjs",
+  "plugins/codex-sparkompass/dist/sparkompass-mcp.mjs",
   "plugins/codex-sparkompass/scripts/sparkompass.mjs",
   "plugins/codex-sparkompass/scripts/sparkompass-mcp.mjs",
   "plugins/codex-sparkompass/scripts/sparkompass-resolve.mjs",
@@ -47,6 +54,8 @@ const REQUIRED_PACKAGE_PATHS = [
 const EXECUTABLE_PACKAGE_PATHS = [
   "bin/codex-sparkompass.mjs",
   "bin/codex-sparkompass-mcp.mjs",
+  "plugins/codex-sparkompass/dist/sparkompass.mjs",
+  "plugins/codex-sparkompass/dist/sparkompass-mcp.mjs",
   "plugins/codex-sparkompass/scripts/sparkompass.mjs",
   "plugins/codex-sparkompass/scripts/sparkompass-mcp.mjs",
   "plugins/codex-sparkompass/scripts/sparkompass-user-prompt-submit.mjs"
@@ -83,8 +92,8 @@ export async function buildPackageDryRunAudit(rootPath, options = {}) {
       executable: Boolean(mode & 0o111)
     };
   });
-  const maxPackageSizeBytes = Number(options.maxPackageSizeBytes) || 400_000;
-  const maxUnpackedSizeBytes = Number(options.maxUnpackedSizeBytes) || 1_500_000;
+  const maxPackageSizeBytes = Number(options.maxPackageSizeBytes) || 1_000_000;
+  const maxUnpackedSizeBytes = Number(options.maxUnpackedSizeBytes) || 3_000_000;
   const maxFiles = Number(options.maxFiles) || 120;
   const checks = [
     check("package-name", pack.name === packageJson.name, `${pack.name || "missing"} === ${packageJson.name}`),

@@ -1,6 +1,8 @@
 node_modules/
 coverage/
 dist/
+!plugins/codex-sparkompass/dist/
+!plugins/codex-sparkompass/dist/*.mjs
 .sparkompass/
 .DS_Store
 *.log

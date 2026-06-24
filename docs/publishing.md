@@ -49,7 +49,7 @@ gh auth login
 
 ```bash
 git add -A
-git commit -m "Release v0.1.0-alpha"
+git commit -m "Release v0.1.0-alpha.0"
 gh repo create codex-sparkompass \
   --public \
   --source=. \
@@ -72,22 +72,35 @@ npm run check
 npm pack --ignore-scripts
 ```
 
+## Git-Marketplace vor Release prüfen
+
+```bash
+npm run build:plugin
+npm run plugin-smoke
+```
+
+Das Gate muss `verified-plugin-install-smoke` melden und darin den Git-Marketplace-Smoke als `ok` zeigen. Dieser Smoke simuliert eine installierte Plugin-Cache-Kopie ohne globale `sparkompass`-CLI.
+
 ## GitHub Release erstellen
 
 ```bash
-git tag -a v0.1.0-alpha -m "v0.1.0-alpha"
-git push origin v0.1.0-alpha
-gh release create v0.1.0-alpha \
-  ./codex-sparkompass-0.1.0.tgz \
-  --title "Codex Sparkompass v0.1.0-alpha" \
-  --notes-file docs/releases/v0.1.0-alpha.md
+git tag -a v0.1.0-alpha.0 -m "v0.1.0-alpha.0"
+git push origin v0.1.0-alpha.0
+gh release create v0.1.0-alpha.0 \
+  ./codex-sparkompass-0.1.0-alpha.0.tgz \
+  --title "Codex Sparkompass v0.1.0-alpha.0" \
+  --notes-file docs/releases/v0.1.0-alpha.0.md
 ```
 
 Danach das lokale Tarball-Artefakt wieder entfernen:
 
 ```bash
-rm -f codex-sparkompass-0.1.0.tgz
+rm -f codex-sparkompass-0.1.0-alpha.0.tgz
 ```
+
+## Optional: npm-Veröffentlichung vorbereiten
+
+Für eine spätere npm-Veröffentlichung sollte GitHub Actions mit npm Trusted Publishing und Provenance genutzt werden. Dadurch ist öffentlich prüfbar, aus welchem Repository und Workflow das Paket gebaut wurde. Vorher muss die Version in `package.json`, `package-lock.json` und `plugins/codex-sparkompass/.codex-plugin/plugin.json` identisch bleiben.
 
 ## Was im Release nicht behauptet werden darf
 

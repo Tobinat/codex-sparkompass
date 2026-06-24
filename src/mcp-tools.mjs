@@ -672,8 +672,8 @@ export const MCP_TOOLS = [
       type: "object",
       properties: {
         rootPath: { type: "string", description: "Repository or folder path. Defaults to the current working directory." },
-        maxPackageSizeKb: { type: "integer", minimum: 1, maximum: 100000, default: 400 },
-        maxUnpackedSizeKb: { type: "integer", minimum: 1, maximum: 100000, default: 1500 },
+        maxPackageSizeKb: { type: "integer", minimum: 1, maximum: 100000, default: 1000 },
+        maxUnpackedSizeKb: { type: "integer", minimum: 1, maximum: 100000, default: 3000 },
         maxFiles: { type: "integer", minimum: 1, maximum: 10000, default: 120 }
       },
       additionalProperties: false
@@ -1762,8 +1762,8 @@ async function routerDecisionTool(args) {
 async function packageAuditTool(args) {
   const root = resolveRoot(args.rootPath);
   return buildPackageDryRunAudit(root, {
-    maxPackageSizeBytes: clampInteger(args.maxPackageSizeKb, 400, 1, 100000) * 1000,
-    maxUnpackedSizeBytes: clampInteger(args.maxUnpackedSizeKb, 1500, 1, 100000) * 1000,
+    maxPackageSizeBytes: clampInteger(args.maxPackageSizeKb, 1000, 1, 100000) * 1000,
+    maxUnpackedSizeBytes: clampInteger(args.maxUnpackedSizeKb, 3000, 1, 100000) * 1000,
     maxFiles: clampInteger(args.maxFiles, 120, 1, 10000)
   });
 }

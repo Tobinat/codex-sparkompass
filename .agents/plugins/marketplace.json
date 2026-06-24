@@ -1,7 +1,7 @@
 {
-  "name": "personal",
+  "name": "codex-sparkompass",
   "interface": {
-    "displayName": "Personal"
+    "displayName": "Codex Sparkompass"
   },
   "plugins": [
     {

@@ -162,8 +162,8 @@ export async function buildReleaseAudit(rootPath, options = {}) {
   const mcp = await inspectMcpTools(root);
   const packageShape = await inspectPackageShape(root);
   const packageDryRun = await buildPackageDryRunAudit(root, {
-    maxPackageSizeBytes: Number(options.maxPackageSizeBytes) || 400_000,
-    maxUnpackedSizeBytes: Number(options.maxUnpackedSizeBytes) || 1_500_000,
+    maxPackageSizeBytes: Number(options.maxPackageSizeBytes) || 1_000_000,
+    maxUnpackedSizeBytes: Number(options.maxUnpackedSizeBytes) || 3_000_000,
     maxFiles: Number(options.maxPackageFiles) || 120
   });
   const packageInstallSmoke = await buildPackageInstallSmokeAudit(root, {
@@ -1351,6 +1351,8 @@ async function inspectPluginShape(root) {
   const mcp = JSON.parse(await fs.readFile(path.join(pluginRoot, ".mcp.json"), "utf8"));
   const hooks = JSON.parse(await fs.readFile(path.join(pluginRoot, "hooks/hooks.json"), "utf8"));
   const skillExists = await exists(path.join(pluginRoot, "skills/codex-sparkompass/SKILL.md"));
+  const distCliExists = await exists(path.join(pluginRoot, "dist/sparkompass.mjs"));
+  const distMcpExists = await exists(path.join(pluginRoot, "dist/sparkompass-mcp.mjs"));
   const bridgeExists = await exists(path.join(pluginRoot, "scripts/sparkompass.mjs"));
   const mcpBridgeExists = await exists(path.join(pluginRoot, "scripts/sparkompass-mcp.mjs"));
   const hookScriptExists = await exists(path.join(pluginRoot, "scripts/sparkompass-user-prompt-submit.mjs"));
@@ -1360,6 +1362,8 @@ async function inspectPluginShape(root) {
     && Boolean(mcp.mcpServers?.sparkompass)
     && Boolean(hooks.hooks?.UserPromptSubmit)
     && skillExists
+    && distCliExists
+    && distMcpExists
     && bridgeExists
     && mcpBridgeExists
     && hookScriptExists
@@ -1368,9 +1372,10 @@ async function inspectPluginShape(root) {
   return {
     schema: "SparkompassPluginShapeAuditV1",
     verified,
-    summary: `skill=${skillExists ? "yes" : "no"}, mcp=${mcp.mcpServers?.sparkompass ? "yes" : "no"}, hook=${hooks.hooks?.UserPromptSubmit ? "yes" : "no"}, unsupported-hooks-field=${Object.hasOwn(manifest, "hooks") ? "present" : "absent"}`,
+    summary: `skill=${skillExists ? "yes" : "no"}, dist=${distCliExists && distMcpExists ? "yes" : "no"}, mcp=${mcp.mcpServers?.sparkompass ? "yes" : "no"}, hook=${hooks.hooks?.UserPromptSubmit ? "yes" : "no"}, unsupported-hooks-field=${Object.hasOwn(manifest, "hooks") ? "present" : "absent"}`,
     manifest_name: manifest.name,
     has_skill: skillExists,
+    has_dist_bundle: distCliExists && distMcpExists,
     has_mcp: Boolean(mcp.mcpServers?.sparkompass),
     has_hook: Boolean(hooks.hooks?.UserPromptSubmit),
     has_unsupported_hooks_field: Object.hasOwn(manifest, "hooks")

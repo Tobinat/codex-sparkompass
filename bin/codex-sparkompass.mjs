@@ -114,7 +114,7 @@ Nutzung:
   sparkompass prompt-ledger add [pfad] --preparation "prompt-preparation.json" [--out .sparkompass/prompt-preparation-ledger.json] [--kind prompt-prepare] [--note "..."] [--json]
   sparkompass pilot [pfad] [--ledger-dir .sparkompass/pilot-run] [--file README.md] [--goal "..."] [--task-command "npm test"] [--json]
   sparkompass impact [pfad] [--savings-ledger .sparkompass/savings-ledger.json] [--task-outcome-ledger .sparkompass/task-outcome-ledger.json] [--handoff-ledger .sparkompass/handoff-ledger.json] [--prompt-preparation-ledger .sparkompass/prompt-preparation-ledger.json] [--json]
-  sparkompass package-audit [pfad] [--max-package-size-kb 400] [--max-unpacked-size-kb 1500] [--max-files 120] [--json]
+  sparkompass package-audit [pfad] [--max-package-size-kb 1000] [--max-unpacked-size-kb 3000] [--max-files 120] [--json]
   sparkompass package-smoke [pfad] [--keep-temp] [--json]
   sparkompass plugin-smoke [pfad] [--keep-temp] [--json]
   sparkompass release-audit [pfad] [--ledger-dir /tmp/sparkompass-release-audit] [--pilot false] [--max-moves 24] [--json]
@@ -1879,14 +1879,14 @@ try {
   } else if (command === "package-audit" || command === "pack-audit") {
     const options = parseOptions(args.slice(1), {
       json: false,
-      maxPackageSizeKb: 400,
-      maxUnpackedSizeKb: 1500,
+      maxPackageSizeKb: 1000,
+      maxUnpackedSizeKb: 3000,
       maxFiles: 120
     });
     const targetPath = options.positionals[0] ?? ".";
     const audit = await buildPackageDryRunAudit(targetPath, {
-      maxPackageSizeBytes: Number(options.maxPackageSizeKb) * 1000 || 400_000,
-      maxUnpackedSizeBytes: Number(options.maxUnpackedSizeKb) * 1000 || 1_500_000,
+      maxPackageSizeBytes: Number(options.maxPackageSizeKb) * 1000 || 1_000_000,
+      maxUnpackedSizeBytes: Number(options.maxUnpackedSizeKb) * 1000 || 3_000_000,
       maxFiles: Number(options.maxFiles) || 120
     });
 

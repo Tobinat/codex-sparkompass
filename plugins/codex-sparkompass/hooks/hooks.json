@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh -c 'root=$(git rev-parse --show-toplevel 2>/dev/null || pwd); script=${SPARKOMPASS_HOOK_SCRIPT:-$root/plugins/codex-sparkompass/scripts/sparkompass-user-prompt-submit.mjs}; if [ -f \"$script\" ]; then node \"$script\"; fi'",
+            "command": "node \"${PLUGIN_ROOT}/scripts/sparkompass-user-prompt-submit.mjs\"",
             "timeout": 5,
             "statusMessage": "Checking Sparkompass prompt budget"
           }

@@ -1,11 +1,9 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
-import path from "node:path";
 import process from "node:process";
-import { fileURLToPath } from "node:url";
+import { resolveSparkompassScript } from "./sparkompass-resolve.mjs";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const stdin = fs.readFileSync(0, "utf8");
 const args = [
   "prompt-advisory",
@@ -13,14 +11,10 @@ const args = [
   "--quiet-ok",
   ...process.argv.slice(2)
 ];
-const candidates = [
-  process.env.SPARKOMPASS_CLI,
-  path.resolve(__dirname, "../../../bin/codex-sparkompass.mjs"),
-  path.resolve(process.cwd(), "bin/codex-sparkompass.mjs")
-].filter(Boolean);
+const resolved = resolveSparkompassScript("cli", import.meta.url);
 
 let result = null;
-for (const candidate of candidates) {
+for (const candidate of resolved.candidates) {
   if (fs.existsSync(candidate)) {
     result = spawnSync(process.execPath, [candidate, ...args], {
       input: stdin,

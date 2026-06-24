@@ -8,6 +8,8 @@ const REQUIRED_PLUGIN_PATHS = [
   ".codex-plugin/plugin.json",
   ".mcp.json",
   "hooks/hooks.json",
+  "dist/sparkompass.mjs",
+  "dist/sparkompass-mcp.mjs",
   "scripts/sparkompass.mjs",
   "scripts/sparkompass-mcp.mjs",
   "scripts/sparkompass-resolve.mjs",
@@ -30,6 +32,8 @@ export async function buildPluginInstallSmokeAudit(rootPath, options = {}) {
   let mcpToolNames = [];
   let mcpLookupSelected = 0;
   let cacheMcpLookupSelected = 0;
+  let gitMcpLookupSelected = 0;
+  let gitMcpToolNames = [];
 
   try {
     await fs.mkdir(path.dirname(installedPluginRoot), { recursive: true });
@@ -52,13 +56,11 @@ export async function buildPluginInstallSmokeAudit(rootPath, options = {}) {
       && manifest.mcpServers === "./.mcp.json"
       && !Object.hasOwn(manifest, "hooks"), manifest.name || "missing"));
     checks.push(check("mcp-config-shape", mcpConfig.mcpServers?.sparkompass?.command === "node"
-      && mcpConfig.mcpServers?.sparkompass?.args?.includes("./scripts/sparkompass-mcp.mjs"), JSON.stringify(mcpConfig.mcpServers?.sparkompass || {})));
-    checks.push(check("hook-config-shape", Boolean(hooksConfig.hooks?.UserPromptSubmit?.[0]?.hooks?.[0]?.command?.includes("sparkompass-user-prompt-submit.mjs")), "UserPromptSubmit"));
+      && mcpConfig.mcpServers?.sparkompass?.args?.includes("./dist/sparkompass-mcp.mjs"), JSON.stringify(mcpConfig.mcpServers?.sparkompass || {})));
+    checks.push(check("hook-config-shape", Boolean(hooksConfig.hooks?.UserPromptSubmit?.[0]?.hooks?.[0]?.command?.includes("${PLUGIN_ROOT}/scripts/sparkompass-user-prompt-submit.mjs")), "UserPromptSubmit"));
     checks.push(check("skill-shape", /^name:\s*codex-sparkompass/m.test(skillText)
       && skillText.includes("package-smoke"), "codex-sparkompass skill"));
 
-    const cliPath = path.join(root, "bin/codex-sparkompass.mjs");
-    const mcpPath = path.join(root, "bin/codex-sparkompass-mcp.mjs");
     const timeoutMs = Number(options.timeoutMs) || 120_000;
     const lookupWorkspace = path.join(tempRoot, "lookup-workspace");
     await fs.mkdir(path.join(lookupWorkspace, "src"), { recursive: true });
@@ -77,19 +79,16 @@ export async function buildPluginInstallSmokeAudit(rootPath, options = {}) {
       "doctor"
     ], {
       cwd: installedPluginRoot,
-      timeoutMs,
-      env: { SPARKOMPASS_CLI: cliPath }
+      timeoutMs
     });
     commands.push(commandSummary("plugin-cli-bridge", bridgeCommand));
     checks.push(check("plugin-cli-bridge", bridgeCommand.exitCode === 0
       && bridgeCommand.stdout.includes("Codex Sparkompass Doctor"), `exit=${bridgeCommand.exitCode}`));
 
-    const mcpCommand = await runCommand(process.execPath, [
-      path.join(installedPluginRoot, "scripts/sparkompass-mcp.mjs")
-    ], {
+    const configuredMcp = mcpConfig.mcpServers.sparkompass;
+    const mcpCommand = await runCommand(resolveConfiguredCommand(configuredMcp.command), configuredMcp.args, {
       cwd: installedPluginRoot,
       timeoutMs,
-      env: { SPARKOMPASS_MCP: mcpPath },
       input: [
         {
           jsonrpc: "2.0",
@@ -139,14 +138,14 @@ export async function buildPluginInstallSmokeAudit(rootPath, options = {}) {
         "Logzeile".repeat(300)
       ].join("\n")
     });
-    const hookCommand = await runCommand(process.execPath, [
-      path.join(installedPluginRoot, "scripts/sparkompass-user-prompt-submit.mjs"),
-      "--min-tokens",
-      "20"
-    ], {
+    const hookCommand = await runCommand(`${hooksConfig.hooks.UserPromptSubmit[0].hooks[0].command} --min-tokens 20`, [], {
       cwd: installedPluginRoot,
       timeoutMs,
-      env: { SPARKOMPASS_CLI: cliPath },
+      shell: true,
+      env: {
+        PLUGIN_ROOT: installedPluginRoot,
+        PLUGIN_DATA: path.join(tempRoot, "plugin-data")
+      },
       input: hookPayload
     });
     commands.push(commandSummary("plugin-user-prompt-hook", hookCommand));
@@ -156,11 +155,11 @@ export async function buildPluginInstallSmokeAudit(rootPath, options = {}) {
     checks.push(check("hook-redacts-sensitive-anchor", !hookCommand.stdout.includes("AUTH_RESET_TOKEN_EXPIRED"), "AUTH_RESET_TOKEN_EXPIRED not echoed"));
 
     const codexHome = path.join(tempRoot, "codex-home");
-    const cachedPluginRoot = path.join(codexHome, "plugins/cache/personal/codex-sparkompass/0.1.0");
+    const cachedPluginRoot = path.join(codexHome, "plugins/cache/codex-sparkompass/codex-sparkompass/0.1.0-alpha.0");
     await fs.mkdir(path.dirname(cachedPluginRoot), { recursive: true });
     await fs.cp(sourcePluginRoot, cachedPluginRoot, { recursive: true });
     await fs.writeFile(path.join(codexHome, "config.toml"), [
-      "[marketplaces.personal]",
+      "[marketplaces.codex-sparkompass]",
       "source_type = \"local\"",
       `source = "${escapeTomlString(root)}"`
     ].join("\n"), "utf8");
@@ -177,9 +176,7 @@ export async function buildPluginInstallSmokeAudit(rootPath, options = {}) {
     checks.push(check("plugin-cache-cli-bridge", cachedBridgeCommand.exitCode === 0
       && cachedBridgeCommand.stdout.includes("Codex Sparkompass Doctor"), `exit=${cachedBridgeCommand.exitCode}`));
 
-    const cachedMcpCommand = await runCommand(process.execPath, [
-      path.join(cachedPluginRoot, "scripts/sparkompass-mcp.mjs")
-    ], {
+    const cachedMcpCommand = await runCommand(resolveConfiguredCommand(configuredMcp.command), configuredMcp.args, {
       cwd: cachedPluginRoot,
       timeoutMs,
       env: { CODEX_HOME: codexHome },
@@ -222,6 +219,99 @@ export async function buildPluginInstallSmokeAudit(rootPath, options = {}) {
       && cachedMcpLookupResult?.schema === "SparkompassLookupToolResultV1"
       && path.resolve(cachedMcpLookupResult.root || "") === path.resolve(lookupWorkspace)
       && (cachedMcpLookupResult.selected || []).some((unit) => unit.name === "compressText"), `lookup selected=${cacheMcpLookupSelected}`));
+
+    const gitCodexHome = path.join(tempRoot, "git-codex-home");
+    const gitCachedPluginRoot = path.join(gitCodexHome, "plugins/cache/codex-sparkompass/codex-sparkompass/0.1.0-alpha.0");
+    const gitPluginData = path.join(gitCodexHome, "plugin-data/codex-sparkompass");
+    await fs.mkdir(path.dirname(gitCachedPluginRoot), { recursive: true });
+    await fs.mkdir(gitPluginData, { recursive: true });
+    await fs.cp(sourcePluginRoot, gitCachedPluginRoot, { recursive: true });
+    await fs.writeFile(path.join(gitCodexHome, "config.toml"), [
+      "[marketplaces.codex-sparkompass]",
+      "source_type = \"git\"",
+      "source = \"Tobinat/codex-sparkompass\"",
+      "ref = \"main\""
+    ].join("\n"), "utf8");
+    const isolatedEnv = {
+      CODEX_HOME: gitCodexHome,
+      HOME: os.homedir(),
+      PATH: path.dirname(process.execPath),
+      PLUGIN_ROOT: gitCachedPluginRoot,
+      PLUGIN_DATA: gitPluginData
+    };
+    checks.push(check("git-marketplace-no-plugin-node-modules", !await exists(path.join(gitCachedPluginRoot, "node_modules")), "node_modules absent in installed plugin"));
+
+    const gitBridgeCommand = await runCommand(process.execPath, [
+      path.join(gitCachedPluginRoot, "scripts/sparkompass.mjs"),
+      "doctor"
+    ], {
+      cwd: gitCachedPluginRoot,
+      timeoutMs,
+      env: isolatedEnv,
+      cleanEnv: true
+    });
+    commands.push(commandSummary("git-marketplace-cli-bridge", gitBridgeCommand));
+    checks.push(check("git-marketplace-cli-bridge", gitBridgeCommand.exitCode === 0
+      && gitBridgeCommand.stdout.includes("Codex Sparkompass Doctor"), `exit=${gitBridgeCommand.exitCode}`));
+
+    const gitMcpCommand = await runCommand(resolveConfiguredCommand(configuredMcp.command), configuredMcp.args, {
+      cwd: gitCachedPluginRoot,
+      timeoutMs,
+      env: isolatedEnv,
+      cleanEnv: true,
+      input: [
+        {
+          jsonrpc: "2.0",
+          id: 1,
+          method: "tools/list",
+          params: {}
+        },
+        {
+          jsonrpc: "2.0",
+          id: 2,
+          method: "tools/call",
+          params: {
+            name: "sparkompass_lookup",
+            arguments: {
+              rootPath: lookupWorkspace,
+              query: "compressText",
+              budget: 80
+            }
+          }
+        }
+      ].map((message) => JSON.stringify(message)).join("\n") + "\n"
+    });
+    commands.push(commandSummary("git-marketplace-mcp-bridge", gitMcpCommand));
+    const gitMcpResponses = gitMcpCommand.stdout.trim().split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line));
+    const gitMcpListResponse = gitMcpResponses.find((response) => response.id === 1);
+    const gitMcpLookupResponse = gitMcpResponses.find((response) => response.id === 2);
+    const gitMcpLookupResult = gitMcpLookupResponse?.result?.structuredContent;
+    gitMcpToolNames = (gitMcpListResponse?.result?.tools || []).map((tool) => tool.name);
+    gitMcpLookupSelected = Number(gitMcpLookupResult?.selected?.length) || 0;
+    checks.push(check("git-marketplace-mcp-bridge", gitMcpCommand.exitCode === 0
+      && gitMcpToolNames.includes("sparkompass_lookup")
+      && gitMcpToolNames.includes("sparkompass_plugin_install_smoke"), `${gitMcpToolNames.length} tools`));
+    checks.push(check("git-marketplace-mcp-tool-call", gitMcpCommand.exitCode === 0
+      && gitMcpLookupResponse?.result?.isError === false
+      && gitMcpLookupResult?.schema === "SparkompassLookupToolResultV1"
+      && path.resolve(gitMcpLookupResult.root || "") === path.resolve(lookupWorkspace)
+      && (gitMcpLookupResult.selected || []).some((unit) => unit.name === "compressText"), `lookup selected=${gitMcpLookupSelected}`));
+
+    const gitHookCommand = await runCommand(`${hooksConfig.hooks.UserPromptSubmit[0].hooks[0].command} --min-tokens 20`, [], {
+      cwd: gitCachedPluginRoot,
+      timeoutMs,
+      shell: true,
+      env: isolatedEnv,
+      cleanEnv: true,
+      input: hookPayload
+    });
+    commands.push(commandSummary("git-marketplace-user-prompt-hook", gitHookCommand));
+    checks.push(check("git-marketplace-user-prompt-hook", gitHookCommand.exitCode === 0
+      && gitHookCommand.stdout.includes("Sparkompass Prompt Advisory")
+      && gitHookCommand.stdout.includes("sparkompass tool-output"), `exit=${gitHookCommand.exitCode}`));
+    checks.push(check("git-marketplace-hook-redacts-sensitive-anchor", !gitHookCommand.stdout.includes("AUTH_RESET_TOKEN_EXPIRED"), "AUTH_RESET_TOKEN_EXPIRED not echoed"));
   } catch (error) {
     checks.push(check("plugin-install-smoke-error", false, error?.message || String(error)));
   } finally {
@@ -239,7 +329,7 @@ export async function buildPluginInstallSmokeAudit(rootPath, options = {}) {
     root,
     generated_at: new Date().toISOString(),
     duration_ms: Date.now() - startedAt,
-    command: "copy plugin to <tmp> && run plugin CLI bridge, MCP tools/list, MCP lookup tools/call, and UserPromptSubmit hook",
+    command: "copy plugin to <tmp> && run plugin CLI bridge, MCP tools/list, MCP lookup tools/call, UserPromptSubmit hook, and Git-marketplace cache smoke",
     plugin: {
       name: manifest?.name || "",
       display_name: manifest?.interface?.displayName || "",
@@ -256,11 +346,17 @@ export async function buildPluginInstallSmokeAudit(rootPath, options = {}) {
       cache_cli_bridge_ok: checks.some((item) => item.id === "plugin-cache-cli-bridge" && item.passed),
       cache_mcp_bridge_ok: checks.some((item) => item.id === "plugin-cache-mcp-bridge" && item.passed),
       cache_mcp_tool_call_ok: checks.some((item) => item.id === "plugin-cache-mcp-tool-call" && item.passed),
+      git_marketplace_ok: checks.some((item) => item.id === "git-marketplace-cli-bridge" && item.passed)
+        && checks.some((item) => item.id === "git-marketplace-mcp-tool-call" && item.passed)
+        && checks.some((item) => item.id === "git-marketplace-user-prompt-hook" && item.passed)
+        && checks.some((item) => item.id === "git-marketplace-hook-redacts-sensitive-anchor" && item.passed),
       hook_advisory_ok: checks.some((item) => item.id === "plugin-user-prompt-hook" && item.passed),
       hook_redacts_sensitive_anchor: checks.some((item) => item.id === "hook-redacts-sensitive-anchor" && item.passed),
       mcp_tool_count: mcpToolNames.length,
       mcp_lookup_selected: mcpLookupSelected,
       cache_mcp_lookup_selected: cacheMcpLookupSelected,
+      git_mcp_tool_count: gitMcpToolNames.length,
+      git_mcp_lookup_selected: gitMcpLookupSelected,
       mcp_required_tools_present: mcpToolNames.includes("sparkompass_lookup")
         && mcpToolNames.includes("sparkompass_prepare_prompt")
         && mcpToolNames.includes("sparkompass_plugin_install_smoke")
@@ -273,7 +369,7 @@ export async function buildPluginInstallSmokeAudit(rootPath, options = {}) {
     },
     caveats: [
       "This copies the local plugin candidate into a temporary directory; it is not Codex Plugin Directory publication.",
-      "The copied-plugin bridge smoke uses SPARKOMPASS_CLI/SPARKOMPASS_MCP; the cache-install bridge resolves the marketplace source through Codex config."
+      "The Git-marketplace smoke simulates a Codex plugin cache with a fresh CODEX_HOME and no global sparkompass CLI in PATH; it does not publish to the official Plugin Directory."
     ]
   };
 }
@@ -291,6 +387,7 @@ Pfad: ${audit.root}
 - MCP-Bridge: ${audit.installed.mcp_bridge_ok ? "ok" : "needs-review"}, ${formatNumber(audit.installed.mcp_tool_count)} Tools
 - MCP-Tool-Call: ${audit.installed.mcp_tool_call_ok ? "ok" : "needs-review"}, ${formatNumber(audit.installed.mcp_lookup_selected)} Lookup-Treffer
 - Cache-Install-Bridge: ${audit.installed.cache_cli_bridge_ok && audit.installed.cache_mcp_bridge_ok && audit.installed.cache_mcp_tool_call_ok ? "ok" : "needs-review"}, ${formatNumber(audit.installed.cache_mcp_lookup_selected)} Lookup-Treffer
+- Git-Marketplace-Smoke: ${audit.installed.git_marketplace_ok ? "ok" : "needs-review"}, ${formatNumber(audit.installed.git_mcp_lookup_selected)} Lookup-Treffer
 - UserPromptSubmit-Hook: ${audit.installed.hook_advisory_ok ? "ok" : "needs-review"}
 - Hook-Redaktion: ${audit.installed.hook_redacts_sensitive_anchor ? "ok" : "needs-review"}
 - Dauer: ${formatNumber(audit.duration_ms)} ms
@@ -310,10 +407,13 @@ function runCommand(command, args, options = {}) {
     const startedAt = Date.now();
     const child = spawn(command, args, {
       cwd: options.cwd,
-      env: {
+      env: options.cleanEnv ? {
+        ...options.env
+      } : {
         ...process.env,
         ...options.env
       },
+      shell: Boolean(options.shell),
       stdio: ["pipe", "pipe", "pipe"]
     });
     let stdout = "";
@@ -384,6 +484,10 @@ function commandSummary(id, result) {
     stdout_excerpt: excerpt(result.stdout),
     stderr_excerpt: excerpt(result.stderr)
   };
+}
+
+function resolveConfiguredCommand(command) {
+  return command === "node" ? process.execPath : command;
 }
 
 function excerpt(text, limit = 500) {
