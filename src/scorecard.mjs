@@ -259,16 +259,22 @@ function buildWarnings({ savingsLedger, taskOutcomeLedger, envelopeLedger, hando
   const warnings = [];
   if (allowRisk) warnings.push("riskante-verdichtungen-würden-nicht-blockieren");
   if (!savingsLedger.totals.entries) warnings.push("no-savings-ledger-entries");
+  if (savingsLedger.totals.needs_review_entries) warnings.push("savings-ledger-review-entries");
   if (!taskOutcomeLedger.totals.entries) {
     warnings.push("no-task-outcome-ledger-entries");
   } else {
     if (!taskOutcomeLedger.totals.verified_tasks) warnings.push("task-outcome-ledger-no-verified-tasks");
     if (taskOutcomeLedger.totals.needs_review_tasks) warnings.push("task-outcome-ledger-review-tasks");
     if (taskOutcomeLedger.totals.output_oracle_failures) warnings.push("task-outcome-ledger-output-oracle-failures");
+    if (taskOutcomeLedger.totals.output_oracle_sensitivity_failures) warnings.push("task-outcome-ledger-output-oracle-sensitivity-failures");
     if (taskOutcomeLedger.totals.receipt_verification_failures) warnings.push("task-outcome-ledger-receipt-verification-failures");
   }
   if (!envelopeLedger.totals.entries) warnings.push("no-envelope-ledger-entries");
-  if (!handoffLedger.totals.entries) warnings.push("no-handoff-ledger-entries");
+  if (!handoffLedger.totals.entries) {
+    warnings.push("no-handoff-ledger-entries");
+  } else if (handoffLedger.totals.needs_review_handoffs) {
+    warnings.push("handoff-ledger-review-handoffs");
+  }
   if (!promptPreparationLedger.totals.entries) {
     warnings.push("no-prompt-preparation-ledger-entries");
   } else {
@@ -362,10 +368,20 @@ function summarizeSavingsLedger(ledger) {
     path: ledger.path,
     entries: ledger.totals.entries,
     verified_entries: ledger.totals.verified_entries,
+    quality_gated_saving_entries: ledger.totals.quality_gated_saving_entries,
+    needs_review_entries: ledger.totals.needs_review_entries,
     delivered_savings_percent: ledger.totals.delivered_savings_percent,
     delivered_saved_tokens: ledger.totals.delivered_saved_tokens,
     delivered_tokens: ledger.totals.delivered_tokens,
     original_tokens: ledger.totals.original_tokens,
+    verified_delivered_savings_percent: ledger.totals.verified_delivered_savings_percent,
+    verified_delivered_saved_tokens: ledger.totals.verified_delivered_saved_tokens,
+    verified_delivered_tokens: ledger.totals.verified_delivered_tokens,
+    verified_original_tokens: ledger.totals.verified_original_tokens,
+    quality_gated_delivered_savings_percent: ledger.totals.quality_gated_delivered_savings_percent,
+    quality_gated_delivered_saved_tokens: ledger.totals.quality_gated_delivered_saved_tokens,
+    quality_gated_delivered_tokens: ledger.totals.quality_gated_delivered_tokens,
+    quality_gated_original_tokens: ledger.totals.quality_gated_original_tokens,
     p95_delivered_tokens: ledger.totals.p95_delivered_tokens,
     fallback_rate_percent: ledger.totals.fallback_rate_percent,
     full_context_fallbacks: ledger.totals.full_context_fallbacks,
@@ -384,6 +400,7 @@ function summarizeTaskOutcomeLedger(ledger) {
     review_rate_percent: ledger.totals.review_rate_percent,
     failed_exit_tasks: ledger.totals.failed_exit_tasks,
     output_oracle_failures: ledger.totals.output_oracle_failures,
+    output_oracle_sensitivity_failures: ledger.totals.output_oracle_sensitivity_failures,
     receipt_verification_failures: ledger.totals.receipt_verification_failures,
     linked_context_packs: ledger.totals.linked_context_packs,
     output_tokens_per_verified_task: ledger.totals.output_tokens_per_verified_task,
@@ -417,10 +434,19 @@ function summarizeHandoffLedger(ledger) {
     path: ledger.path,
     entries: ledger.totals.entries,
     verified_handoffs: ledger.totals.verified_handoffs,
+    quality_gated_handoff_saving_handoffs: ledger.totals.quality_gated_handoff_saving_handoffs,
     start_context_savings_percent: ledger.totals.start_context_savings_percent,
     start_context_saved_tokens: ledger.totals.start_context_saved_tokens,
     inventory_tokens: ledger.totals.inventory_tokens,
     start_prompt_tokens: ledger.totals.start_prompt_tokens,
+    verified_start_context_savings_percent: ledger.totals.verified_start_context_savings_percent,
+    verified_start_context_saved_tokens: ledger.totals.verified_start_context_saved_tokens,
+    verified_inventory_tokens: ledger.totals.verified_inventory_tokens,
+    verified_start_prompt_tokens: ledger.totals.verified_start_prompt_tokens,
+    quality_gated_start_context_savings_percent: ledger.totals.quality_gated_start_context_savings_percent,
+    quality_gated_start_context_saved_tokens: ledger.totals.quality_gated_start_context_saved_tokens,
+    quality_gated_inventory_tokens: ledger.totals.quality_gated_inventory_tokens,
+    quality_gated_start_prompt_tokens: ledger.totals.quality_gated_start_prompt_tokens,
     p95_start_prompt_tokens: ledger.totals.p95_start_prompt_tokens,
     blocked_handoffs: ledger.totals.blocked_handoffs
   };
@@ -432,11 +458,16 @@ function summarizePromptPreparationLedger(ledger) {
     path: ledger.path,
     entries: ledger.totals.entries,
     verified_preparations: ledger.totals.verified_preparations,
+    quality_gated_prompt_saving_preparations: ledger.totals.quality_gated_prompt_saving_preparations,
     needs_review_preparations: ledger.totals.needs_review_preparations,
     input_tokens: ledger.totals.input_tokens,
     sendable_prompt_tokens: ledger.totals.sendable_prompt_tokens,
     sendable_prompt_saved_tokens: ledger.totals.sendable_prompt_saved_tokens,
     sendable_prompt_savings_percent: ledger.totals.sendable_prompt_savings_percent,
+    verified_input_tokens: ledger.totals.verified_input_tokens,
+    verified_sendable_prompt_tokens: ledger.totals.verified_sendable_prompt_tokens,
+    verified_sendable_prompt_saved_tokens: ledger.totals.verified_sendable_prompt_saved_tokens,
+    verified_sendable_prompt_savings_percent: ledger.totals.verified_sendable_prompt_savings_percent,
     p95_sendable_prompt_tokens: ledger.totals.p95_sendable_prompt_tokens,
     p95_sendable_saved_tokens: ledger.totals.p95_sendable_saved_tokens,
     fallback_count: ledger.totals.fallback_count,
@@ -477,11 +508,21 @@ function buildNextActions({ verified, warnings }) {
 
 function formatSavingsLedgerLine(ledger) {
   if (!ledger.entries) return "keine Einträge";
-  return `${formatNumber(ledger.entries)} Einträge, ${formatSavingsBar({
+  return `${formatNumber(ledger.entries)} Einträge, ${formatNumber(ledger.verified_entries)} verifiziert (${formatNumber(ledger.quality_gated_saving_entries)} sparend), ${formatSavingsBar({
     originalTokens: ledger.original_tokens,
     compactTokens: ledger.delivered_tokens,
     savedTokens: ledger.delivered_saved_tokens,
     percent: ledger.delivered_savings_percent
+  })}, qualitätsgegated ${formatSavingsBar({
+    originalTokens: ledger.quality_gated_original_tokens,
+    compactTokens: ledger.quality_gated_delivered_tokens,
+    savedTokens: ledger.quality_gated_delivered_saved_tokens,
+    percent: ledger.quality_gated_delivered_savings_percent
+  })}, verifiziert ${formatSavingsBar({
+    originalTokens: ledger.verified_original_tokens,
+    compactTokens: ledger.verified_delivered_tokens,
+    savedTokens: ledger.verified_delivered_saved_tokens,
+    percent: ledger.verified_delivered_savings_percent
   })}, Fallbacks ${ledger.full_context_fallbacks}`;
 }
 
@@ -502,16 +543,26 @@ function formatHandoffLedgerLine(ledger) {
     compactTokens: ledger.start_prompt_tokens,
     savedTokens: ledger.start_context_saved_tokens,
     percent: ledger.start_context_savings_percent
+  })}, sparend ${formatNumber(ledger.quality_gated_handoff_saving_handoffs)}/${formatNumber(ledger.verified_handoffs)}, qualitätsgegated ${formatSavingsBar({
+    originalTokens: ledger.quality_gated_inventory_tokens,
+    compactTokens: ledger.quality_gated_start_prompt_tokens,
+    savedTokens: ledger.quality_gated_start_context_saved_tokens,
+    percent: ledger.quality_gated_start_context_savings_percent
   })}, blockiert ${formatNumber(ledger.blocked_handoffs)}`;
 }
 
 function formatPromptPreparationLedgerLine(ledger) {
   if (!ledger.entries) return "keine Einträge";
-  return `${formatNumber(ledger.entries)} Einträge, ${formatNumber(ledger.verified_preparations)} verifiziert, ${formatSavingsBar({
+  return `${formatNumber(ledger.entries)} Einträge, ${formatNumber(ledger.verified_preparations)} verifiziert (${formatNumber(ledger.quality_gated_prompt_saving_preparations)} sparend), ${formatSavingsBar({
     originalTokens: ledger.input_tokens,
     compactTokens: ledger.sendable_prompt_tokens,
     savedTokens: ledger.sendable_prompt_saved_tokens,
     percent: ledger.sendable_prompt_savings_percent
+  })}, qualitätsgegated ${formatSavingsBar({
+    originalTokens: ledger.verified_input_tokens,
+    compactTokens: ledger.verified_sendable_prompt_tokens,
+    savedTokens: ledger.verified_sendable_prompt_saved_tokens,
+    percent: ledger.verified_sendable_prompt_savings_percent
   })}, Fallbacks ${formatNumber(ledger.fallback_count)}`;
 }
 

@@ -1,6 +1,6 @@
 # Installation
 
-Codex Sparkompass ist aktuell eine `v0.1.0-alpha.0` Technical Preview. Es ist ein lokales Node.js-CLI mit Codex-Skill, Plugin-Kandidat und MCP-Server.
+Codex Sparkompass ist aktuell eine `v0.1.0-alpha.1` Technical Preview. Es ist ein lokales Node.js-CLI mit Codex-Skill, Plugin-Kandidat und MCP-Server.
 
 ## Voraussetzungen
 
@@ -29,7 +29,7 @@ sparkompass audit .
 ## Download ohne Git
 
 1. Öffne die GitHub-Release-Seite.
-2. Lade `Source code (zip)` oder das Release-Artefakt `codex-sparkompass-0.1.0-alpha.0.tgz`.
+2. Lade `Source code (zip)` oder das Release-Artefakt `codex-sparkompass-0.1.0-alpha.1.tgz`.
 3. Entpacke das Projekt.
 4. Führe aus:
 
@@ -69,7 +69,7 @@ Der Plugin-Kandidat bringt ein gebautes `dist`-Bundle mit. Dadurch braucht die i
 
 ```bash
 npm pack --ignore-scripts
-npm install -g ./codex-sparkompass-0.1.0-alpha.0.tgz
+npm install -g ./codex-sparkompass-0.1.0-alpha.1.tgz
 sparkompass doctor
 ```
 

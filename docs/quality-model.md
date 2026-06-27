@@ -5,18 +5,18 @@ Sparkompass optimiert nicht nur auf kurze Ausgabe. Eine Kompression ist nur nüt
 ## Metriken
 
 - **Savings**: geschätzte Token-Ersparnis. Bei `compress` zwischen Rohtext und Kompaktfassung, bei `pack`, Dogfood und Benchmark zwischen Rohtext und tatsächlich geliefertem Kontext.
-- **Anchors**: erkannte wichtige Begriffe wie Fehlercodes, Dateipfade, CLI-Optionen, Funktionsnamen und geschützte `--keep`-Begriffe.
+- **Anchors**: erkannte wichtige Begriffe wie Fehlercodes, Dateipfade, CLI-Optionen, Funktionsnamen, Konfigurationswerte und geschützte `--keep`-Begriffe.
 - **Protected lines**: Zeilen, die wegen Fehlern, Pfaden, Überschriften, Exporten oder `--keep` bevorzugt erhalten bleiben.
 - **Risk status**: `gut`, `ok` oder `riskant`.
-- **Critical anchors**: Fehlercodes, Dateipfade, Code-Begriffe, gefährliche CLI-Optionen und `--keep`-Begriffe, die zu 100% erhalten bleiben müssen.
-- **Anchor class breakdown**: getrennte Retention für Klassen wie `keep`, `error-code`, `path`, `cli-option` und `code`, damit ein einzelner Gesamtwert kritische Verluste nicht verdeckt.
+- **Critical anchors**: Fehlercodes, Dateipfade, URLs, Env-Zuweisungen, Dateiberechtigungen, numerische Grenzen mit Einheiten, boolesche Policy-/Moduswerte, Diff-Marker und relevante Diff-Änderungszeilen, API-/Schema-Verträge, Datenbank-/Migrationsverträge, Idempotenz-/Nebenlaeufigkeitsverträge, Locale-/Encoding-/Normalisierungsverträge, Auth-/Scope-/Rollenverträge, Crypto-/Signatur-/Hashverträge, Geld-/Währungs-/Rundungsverträge, destruktive Operationen, Regex-/Glob-/Matcher-Verträge, Web-Security-Header-/Cookie-Verträge, Code-Begriffe, gefährliche CLI-Optionen und `--keep`-Begriffe, die zu 100% erhalten bleiben müssen.
+- **Anchor class breakdown**: getrennte Retention für Klassen wie `keep`, `error-code`, `numeric-constraint`, `config-value`, `diff-marker`, `diff-change`, `order-rule`, `temporal-constraint`, `api-contract`, `data-migration-contract`, `locale-encoding`, `auth-scope`, `crypto-contract`, `money-contract`, `destructive-operation`, `pattern-contract`, `web-security-header`, `path`, `cli-option` und `code`, damit ein einzelner Gesamtwert kritische Verluste nicht verdeckt.
 - **Source evidence**: Rückverweise von kompakten Zeilen zu Originalzeilen mit Hash.
 - **ContextPack Receipt**: maschinenlesbarer Beleg für Tokens, Anker, Quellen, Fallback und Gate-Status.
 - **ContextPackReceiptVerification**: nachtraegliche Prüfung eines gespeicherten Receipts gegen Originalquelle, Quellbelege und optional den gelieferten Kontext.
 - **ContextPackFormat**: offener Receipt-Vertrag mit JSON-Schema, portablen Invarianten und Linting ohne Originalquelle.
 - **ContextPackRegistry**: lokaler Index für `context_pack_id`, Receipt, Quellpfad und gelieferten Kontext, damit ein Pack später per ID wiedergefunden und hashgenau verifiziert werden kann.
-- **TaskOutcomeReceipt**: lokale Quittung für Test-, Lint-, Build- oder andere Check-Ergebnisse mit Exit-Code, Output-Hash, Output-Orakel und optionaler ContextPack-Receipt-Verifikation.
-- **TaskOutcomeLedger**: lokales Journal aus TaskOutcomeReceipts, das verifizierte Tasks, Review-Fälle, Verifikationsrate, Review-Gründe, p95-Dauer und Output-/Kontexttokens pro verifiziertem Task ausweist.
+- **TaskOutcomeReceipt**: lokale Quittung für Test-, Lint-, Build- oder andere Check-Ergebnisse mit Exit-Code, Output-Hash, sensitivem Output-Orakel und optionaler ContextPack-Receipt-Verifikation.
+- **TaskOutcomeLedger**: lokales Journal aus TaskOutcomeReceipts, das verifizierte Tasks, Review-Fälle, Verifikationsrate, Review-Gründe, Output-Orakel-Sensitivität, p95-Dauer und Output-/Kontexttokens pro verifiziertem Task ausweist.
 - **CodexOfficialUsageReceipt**: Beleg aus dokumentierten `codex exec --json`-Events, der `turn.completed.usage` mit Input-, Cached-Input-, Output- und Reasoning-Output-Tokens übernimmt und den Roh-JSONL-Export hasht. Gesamt-Tokens werden als `input_tokens + output_tokens` berechnet; Cached-Input und Reasoning-Output sind Unterkategorien.
 - **CodexUsageInvariants**: maschinenlesbare Prüfung pro Receipt, ob `cached_input_tokens <= input_tokens`, `reasoning_output_tokens <= output_tokens` und `total_tokens = input_tokens + output_tokens` für Summen und einzelne Events gelten.
 - **CodexOfficialUsageLedger**: lokales Journal aus CodexOfficialUsageReceipts, das offizielle Codex-Laufwerte über mehrere Runs summiert, ohne daraus Preis- oder Rechnungswerte abzuleiten.
@@ -39,10 +39,10 @@ Sparkompass optimiert nicht nur auf kurze Ausgabe. Eine Kompression ist nur nüt
 - **ContextAblationAudit**: planbezogener Gegenfakten-Test, der Sofortkontext-Einheiten entfernt und misst, welche für ein Akzeptanz-Orakel kritisch sind.
 - **ContextSlimmingPlan**: ablation-getriebener Vorschlag, der nur oracle-sichere Sofortkontext-Einheiten nach On-Demand verschiebt und kritische oder ungeprüfte Einheiten sofort sichtbar lässt.
 - **ContextHandoffReceipt**: nutzbarer Handoff-Beleg mit Startprompt, sichtbarer Startkontext-Ersparnis, Readiness-Gates, Prompt-Cache-Layout und MCP-Nachladevertrag.
-- **ContextHandoffLedger**: lokales Journal aus ContextHandoffReceipt-Einträgen, das geschätzte Startkontext-Ersparnis, Gate-Status und Nachlade-Evidence über mehrere Handoffs ausweist.
+- **ContextHandoffLedger**: lokales Journal aus ContextHandoffReceipt-Einträgen, das Brutto- und qualitätsgegatede positive Startkontext-Ersparnis, Gate-Status und Nachlade-Evidence über mehrere Handoffs ausweist.
 - **ContextEnvelope**: cache-freundliche Übergabestruktur aus stabilem Prefix, variablem Tail und On-Demand-Index auf Basis eines ContextPlans.
 - **ContextEnvelopeLedger**: lokales Journal aus ContextEnvelope-Hashes, das Prefix-Wiederverwendung und Prefix-Invalidierung über mehrere Läufe ausweist.
-- **SavingsLedger**: lokales Journal aus ContextPack Receipts, das echte gelieferte Ersparnis, Fallback-Rate und Qualitätswerte über mehrere Läufe ausweist.
+- **SavingsLedger**: lokales Journal aus ContextPack Receipts, das Brutto-Ersparnis, sicher verifizierte Packs, qualitätsgegatede positive gelieferte Ersparnis, Fallback-Rate und Qualitätswerte über mehrere Läufe ausweist.
 - **SparkompassPilotRun**: reproduzierbarer Eigenlauf, der SavingsLedger, PromptPreparationLedger, TaskOutcomeLedger, ContextEnvelopeLedger und ContextHandoffLedger zusammen befüllt und Tokens pro verifiziertem Task sowie sendbare Prompt-Ersparnis sichtbar macht.
 - **SparkompassImpactReport**: qualitätsgegatede Nutzerwirkungsansicht aus Savings-, Handoff-, PromptPreparation- und TaskOutcome-Ledgers mit kombinierten Sparbalken, p95-Werten und Blockern.
 - **ShadowRun**: Vergleich von Vollkontext und geliefertem Sparkompass-Kontext gegen dasselbe Akzeptanzorakel.
@@ -56,10 +56,11 @@ Sparkompass optimiert nicht nur auf kurze Ausgabe. Eine Kompression ist nur nüt
 - **MCP evidence loading**: interaktives Nachladen begrenzter Originalstellen inklusive Hash-Abgleich, bevor Codex exakte Aussagen über Code trifft.
 - **ToolOutputSummary**: strukturierte Zusammenfassung langer Tool-Ausgaben mit Status, ersten Fehlern, betroffenen Dateien, Wiederholungen, Fehlercodes und Rohdaten-Hash.
 - **SparkompassPromptPreparation**: bewusst sendbarer Kompaktprompt aus einer großen geplanten Eingabe, mit ContextPack-ID, Gate, Hashes, Akzeptanz-Orakel und Sparbalken.
-- **PromptPreparationLedger**: lokales Journal aus vorbereiteten Prompts, das sendbare Prompt-Ersparnis, verifizierte/review-pflichtige Vorbereitungen, p95-Werte und Fallbacks über mehrere Handoffs ausweist.
+- **PromptPreparationLedger**: lokales Journal aus vorbereiteten Prompts, das Brutto- und qualitätsgegatede positive sendbare Prompt-Ersparnis, verifizierte/review-pflichtige Vorbereitungen, p95-Werte und Fallbacks über mehrere Handoffs ausweist.
 - **Verified Semantic Cache**: Wiederverwendung alter ContextPacks nur nach adaptiver Similarity-, Dependency-, Receipt- und Oracle-Prüfung.
 - **ContextPolicy**: Risikoprofil für ContextPacks und ContextPlans, das Zielgröße, Startbudget, Erweiterungspfad und Risk-Lane-Regeln bestimmt.
 - **ContextCalibration**: Suche nach der kleinsten direkt verifizierten Zielgröße für ein Risikoprofil.
+- **ContextAutoTarget**: Receipt-Spur für `pack --target auto`; zeigt getestete Zielgrößen, gewähltes Minimum, Baseline gegen das normale Profilziel, Qualitätsvertrag und geschätzte Zusatzersparnis.
 - **SparkompassScorecard**: read-only Freigabeansicht aus Dogfood, Benchmark, TaskOutcome-Gates und lokalen Ledger-Spuren.
 - **PackageDryRunAudit**: lokaler `npm pack --dry-run --json --ignore-scripts`-Beleg für Paketinhalt, Pflichtpfade, verbotene Artefakte, Größenlimits und ausführbare CLI-/Plugin-Bridges.
 - **PackageInstallSmokeAudit**: temporäre Frischinstallation des lokal gepackten Pakets mit installierter CLI-, Benchmark- und MCP-Prüfung.
@@ -154,17 +155,17 @@ Durchschnittswerte sind Diagnosewerte, keine Freigabe allein. Release-Qualität 
 - kritischen und informativen Ankern
 - `AnchorClassBreakdownV1` für alle Anker und kritische Ankerklassen
 - Quellbelegen mit Originalzeile und Hash
-- optionalem `acceptance_oracle` für `--expect` und `--expect-regex`
+- optionalem `acceptance_oracle` für `--expect` und `--expect-regex`, inklusive Sensitivitätsprüfung gegen Gegenfakten
 - Fallback-Entscheidung
 - Kontext-Versuche mit Zielgröße, Status, Tokens und Gründen
 - `compact_context` und `delivered_context` mit Hash, Tokens und Liefermodus
 - Gate-Status `verified-publishable`, `verified-expanded-context` oder `fallback-full-context`
 
-Wenn eine Zielgröße unsicher ist, versucht `pack` zuerst größere Kompaktfassungen. Erst wenn kein Versuch die kritischen Gates besteht, wird Vollkontext geliefert. Zu den kritischen Gates gehoeren 100% kritische Anker, 100% Quellbelege, keine riskante Verdichtung und, falls gesetzt, ein bestandenes Akzeptanz-Orakel gegen den gelieferten Kontext.
+Wenn eine Zielgröße unsicher ist, versucht `pack` zuerst größere Kompaktfassungen. Erst wenn kein Versuch die kritischen Gates besteht, wird Vollkontext geliefert. Zu den kritischen Gates gehoeren 100% kritische Anker, 100% Quellbelege, keine riskante Verdichtung und, falls gesetzt, ein bestandenes Akzeptanz-Orakel gegen Original und gelieferten Kontext.
 
 Die kritischen Anker werden zusätzlich nach Klassen berichtet. Nicht jede CLI-Option ist automatisch kritisch; gefährliche Optionen wie `--force`, `--hard`, `--no-verify` oder `--unsafe` werden aber als kritische `cli-option` behandelt und müssen erhalten bleiben.
 
-Das Akzeptanz-Orakel prüft immer auch den Originaltext. Wenn der Originaltext selbst eine Erwartung nicht enthält oder ein Regex ungültig ist, zeigt das Receipt `acceptance-oracle-source-failed`; Sparkompass erfindet dann keinen Erfolg.
+Das Akzeptanz-Orakel prüft immer auch den Originaltext. Wenn der Originaltext selbst eine Erwartung nicht enthält oder ein Regex ungültig ist, zeigt das Receipt `acceptance-oracle-source-failed`; Sparkompass erfindet dann keinen Erfolg. Zusätzlich erzeugt Sparkompass `AcceptanceOracleSensitivityV1`: Erwartete Fakten werden testweise entfernt, und das Oracle muss diesen Verlust bemerken. Wenn ein zu breites Oracle eine Entfernung nicht erkennt, blockieren `acceptance-oracle-source-insensitive`, `acceptance-oracle-insensitive` oder `oracle-insensitive` den verifizierten Gate-Pfad.
 
 Der Sparbalken in `pack` nutzt `savings.delivered`. Bei `fallback-full-context` ist die echte Ersparnis deshalb 0%, auch wenn der verworfene Kompakt-Kandidat kleiner war. Das verhindert, dass Sparkompass sich eine Ersparnis anrechnet, die Codex nie wirklich erhalten hat.
 
@@ -181,7 +182,7 @@ Der Sparbalken in `pack` nutzt `savings.delivered`. Bei `fallback-full-context` 
 - 100% Source-Evidence-Coverage und plausible Evidence-Einträge
 - keine riskante Qualitätswertung
 - Fallback- und Delivery-Mode-Konsistenz
-- bestandene Acceptance-Oracle-Spur, wenn ein Oracle aktiv ist
+- bestandene und sensitive Acceptance-Oracle-Spur, wenn ein Oracle aktiv ist
 
 Das Linting ersetzt nicht `receipt verify`: Ohne Originalquelle kann es nicht beweisen, dass die Quellzeilen noch identisch sind. Es ist der portable Vertrag für Austausch, CI und spätere Codex-Integration; `receipt verify` bleibt die hashgenaue Quellenprüfung.
 
@@ -200,7 +201,7 @@ Die Prüfung liest ein gespeichertes `ContextPackReceiptV1` oder ein Pack-JSON m
 - alle kritischen Ankerklassen = 100%
 - Source-Evidence-Coverage = 100%
 - keine riskante Verdichtung
-- bestandenes Acceptance-Oracle für den gelieferten Kontext, wenn ein Oracle aktiv war
+- bestandenes und sensitives Acceptance-Oracle für Original und gelieferten Kontext, wenn ein Oracle aktiv war
 
 Der Originaltext ist für eine vollständige Verifikation erforderlich. Ohne Originalquelle meldet die Prüfung `receipt-needs-review`, statt ein altes Receipt blind zu vertrauen. Der gelieferte Kontext ist optional, weil alte Workflows manchmal nur das Receipt speichern; wenn er vorhanden ist, wird er hashgenau geprüft.
 
@@ -232,6 +233,7 @@ Das Artefakt verbindet einen lokalen Check mit einer reproduzierbaren Spur:
 - Hashes und Token-Schätzungen für stdout, stderr und kombinierte Ausgabe
 - `ToolOutputSummaryV1` für die kompakte Sicht auf lange Ausgaben
 - optionales Output-Orakel aus `--expect-output` und `--expect-output-regex`
+- `TaskOutputOracleSensitivityV1`: Gegenfakten-Prüfung, ob ein gefundenes Output-Signal auch wirklich als Verlust erkannt würde
 - optionales `ContextPackReceiptVerificationV1`, wenn ein Pack-Receipt mit Originalquelle verknüpft wurde
 
 Das Gate `verified-task-outcome` erfordert:
@@ -239,6 +241,7 @@ Das Gate `verified-task-outcome` erfordert:
 - kein Timeout
 - Exit-Code entspricht `expected_exit_code`
 - alle Output-Erwartungen wurden gefunden, wenn ein Output-Orakel gesetzt ist
+- das Output-Orakel ist sensitiv, wenn es gesetzt ist; zu breite Regex-Orakel wie `TASK_OK` über mehreren Treffern werden review-pflichtig
 - ein verknüpftes ContextPack-Receipt ist verifiziert, wenn es angegeben wurde
 
 `sparkompass task run` führt einen lokalen Befehl bewusst über die CLI aus. `sparkompass_task_outcome` in MCP registriert nur bereits vorhandenen Output und führt keine Shell-Befehle aus. Damit kann Codex Task-Ergebnisse belegen, ohne dass das Kontextwerkzeug selbst versteckt Kommandos startet. Mit `--ledger` schreibt `task run` oder `task record` den Beleg zusätzlich in ein `TaskOutcomeLedgerV1`.
@@ -253,8 +256,8 @@ Das Ledger macht aus einzelnen Check-Belegen eine Verlaufsmessung:
 
 - verifizierte und review-pflichtige TaskOutcomes
 - Verifikationsrate und Review-Rate
-- häufigste Review-Gründe aus Exit-Code-, Output-Orakel- oder Receipt-Fehlern
-- fehlgeschlagene Exit-Code-Prüfungen und Output-Orakel-Fehler
+- häufigste Review-Gründe aus Exit-Code-, Output-Orakel-, Output-Orakel-Sensitivitäts- oder Receipt-Fehlern
+- fehlgeschlagene Exit-Code-Prüfungen, Output-Orakel-Fehler und Output-Orakel-Sensitivitätsfehler
 - verknüpfte ContextPacks und Receipt-Verifikationsfehler
 - p95 Output-Tokens
 - p95 Dauer
@@ -278,7 +281,7 @@ Die Scorecard schreibt keine neuen Receipts, Caches oder Ledger-Dateien. Sie fü
 - ContextHandoffLedger-Summen, wenn ein Ledger vorhanden ist
 - PromptPreparationLedger-Summen, sendbare Prompt-Ersparnis und Fallbacks, wenn ein Ledger vorhanden ist
 
-Das Gate `verified-scorecard` erfordert keine Ledger-Einträge, weil ein frischer Klon sonst kuenstlich blockiert würde. Fehlende Savings-, TaskOutcome-, Envelope-, Handoff- oder PromptPreparation-Ledger erscheinen als Hinweise. Wenn ein TaskOutcomeLedger oder PromptPreparationLedger vorhanden ist, aber Review-Fälle, Output-Orakel-Fehler, Receipt-Verifikationsfehler oder blockierte Vorbereitungen enthält, erscheinen diese ebenfalls als Hinweise. Blockierend sind Dogfood-/Benchmark-Fehler, verlorene kritische Anker, fehlende Quellbelege, Vollkontext-Fallbacks, riskante Verdichtungen, Regressionen oder unvollständige Benchmark-TaskOutcomes.
+Das Gate `verified-scorecard` erfordert keine Ledger-Einträge, weil ein frischer Klon sonst kuenstlich blockiert würde. Fehlende Savings-, TaskOutcome-, Envelope-, Handoff- oder PromptPreparation-Ledger erscheinen als Hinweise. Wenn ein TaskOutcomeLedger oder PromptPreparationLedger vorhanden ist, aber Review-Fälle, Output-Orakel-Fehler, Output-Orakel-Sensitivitätsfehler, Receipt-Verifikationsfehler oder blockierte Vorbereitungen enthält, erscheinen diese ebenfalls als Hinweise. Blockierend sind Dogfood-/Benchmark-Fehler, verlorene kritische Anker, fehlende Quellbelege, Vollkontext-Fallbacks, riskante Verdichtungen, Regressionen oder unvollständige Benchmark-TaskOutcomes.
 
 ## SparkompassPilotRun v1
 
@@ -292,7 +295,7 @@ Der Pilot ist die schreibende Gegenprobe zur read-only Scorecard. Er führt eine
 - ein `ContextEnvelopeV1` in ein `ContextEnvelopeLedgerV1`
 - ein `ContextHandoffReceiptV1` in ein `ContextHandoffLedgerV1`
 
-Das Gate `verified-pilot-run` erfordert einen publishable Dogfood-Lauf, einen verifizierten Benchmark, mindestens einen verifizierten Eintrag in jedem Pilot-Ledger und eine verifizierte Scorecard gegen genau diese Ledger. Der Standardlauf zeichnet Sparkompass' eigene Dogfood-/Benchmark-Gates als TaskOutcome auf. Über CLI kann `--task-command` einen echten Projektcheck koppeln; das MCP-Werkzeug führt bewusst keine frei wählbaren Shell-Befehle aus.
+Das Gate `verified-pilot-run` erfordert einen publishable Dogfood-Lauf, einen verifizierten Benchmark, mindestens einen verifizierten Eintrag in jedem Pilot-Ledger, mindestens ein qualitätsgegatedes sparendes ContextPack, mindestens einen qualitätsgegateden sparenden Handoff, mindestens eine qualitätsgegatede sparende PromptPreparation mit positiver sendbarer Ersparnis und eine verifizierte Scorecard gegen genau diese Ledger. Ein verifizierter Vollkontext-Fallback schützt Qualität, reicht aber nicht mehr als Pilot-Sparbeleg. Der Standardlauf zeichnet Sparkompass' eigene Dogfood-/Benchmark-Gates als TaskOutcome auf. Über CLI kann `--task-command` einen echten Projektcheck koppeln; das MCP-Werkzeug führt bewusst keine frei wählbaren Shell-Befehle aus.
 
 Die wichtigste Kennzahl ist `context_tokens_per_verified_task`: Sie verbindet gelieferte ContextPack-Tokens mit einem verifizierten TaskOutcome. Dazu kommen echte gelieferte Ersparnis, sendbare Prompt-Ersparnis, Prefix-Reuse und geschätzte Startkontext-Ersparnis. Das beweist keine Abrechnung, aber es beweist, dass Sparkompass eine nachvollziehbare, lokal reproduzierbare Belegspur erzeugt hat.
 
@@ -302,12 +305,12 @@ Die wichtigste Kennzahl ist `context_tokens_per_verified_task`: Sie verbindet ge
 
 Der Impact Report liest vorhandene Ledger und schreibt keine neuen Messdaten. Er kombiniert:
 
-- `SavingsLedgerV1` für echte gelieferte ContextPack-Ersparnis
-- `ContextHandoffLedgerV1` für geschätzte Startkontext-Ersparnis
-- `PromptPreparationLedgerV1` für sendbare Prompt-Ersparnis und Prompt-Verifikation
-- `TaskOutcomeLedgerV1` für verifizierte Tasks, Output-Orakel und Receipt-Verifikationsstatus
+- `SavingsLedgerV1` für Brutto-Ersparnis, sicher verifizierte Packs und qualitätsgegatede positive gelieferte ContextPack-Ersparnis
+- `ContextHandoffLedgerV1` für Brutto- und qualitätsgegatede positive geschätzte Startkontext-Ersparnis
+- `PromptPreparationLedgerV1` für Brutto- und qualitätsgegatede positive sendbare Prompt-Ersparnis und Prompt-Verifikation
+- `TaskOutcomeLedgerV1` für verifizierte Tasks, Output-Orakel, Output-Orakel-Sensitivität und Receipt-Verifikationsstatus
 
-Das Gate `verified-impact` erfordert vorhandene Messdaten und keine Qualitätsblocker. Blockierend sind unter anderem fehlende verifizierte Einträge in vorhandenen Ledgers, Vollkontext-Fallbacks, riskante Verdichtungen, blockierte Handoffs, review-pflichtige Prompt-Vorbereitungen, Review-Tasks, Output-Orakel-Fehler, Receipt-Verifikationsfehler, kritische Anker unter 100% oder Quellbelege unter 100%. Wenn alle Ledgers leer oder nicht vorhanden sind, meldet der Report `impact-ledger-empty`, statt eine Sparwirkung zu behaupten.
+Das Gate `verified-impact` erfordert vorhandene Messdaten und keine Qualitätsblocker. Blockierend sind unter anderem fehlende verifizierte Einträge in vorhandenen Ledgers, vorhandene SavingsLedgers ohne qualitätsgegatede positive ContextPack-Ersparnis, vorhandene PromptPreparation-Ledgers ohne qualitätsgegatede positive sendbare Ersparnis, review-pflichtige Pack- oder Handoff-Einträge, Vollkontext-Fallbacks, riskante Verdichtungen, blockierte Handoffs, review-pflichtige Prompt-Vorbereitungen, Review-Tasks, Output-Orakel-Fehler, Output-Orakel-Sensitivitätsfehler, Receipt-Verifikationsfehler, kritische Anker unter 100% oder Quellbelege unter 100%. Wenn alle Ledgers leer oder nicht vorhanden sind, meldet der Report `impact-ledger-empty`, statt eine Sparwirkung zu behaupten.
 
 Die Hauptzahlen sind:
 
@@ -315,6 +318,7 @@ Die Hauptzahlen sind:
 - geschätzte Startkontext-Ersparnis
 - sendbare Prompt-Ersparnis
 - kombinierte Kontext-Ersparnis
+- qualitätsgegatede positive Kontext- und Prompt-Ersparnis, die nur verifizierte und tatsächlich sparende Pack-, Handoff- und PromptPreparation-Einträge zählt
 - verifizierte Packs, Handoffs und Tasks
 - Tokens pro verifiziertem Task
 - p95 gelieferte Tokens, p95 Startprompt-Tokens und p95 Output-Tokens
@@ -349,13 +353,14 @@ Das Audit ist die maschinenlesbare Zielkarte vor einer Release-Entscheidung. Es 
 - ExperimentEvidenceAudit-Probe mit vollständigen geplanten Usage-/TaskOutcome-/Prompt-Artefakten
 - ExperimentRun/Router/GatePath-Probe mit Usage-Invarianten, RunManifest-Metadaten inklusive ContextPack-Hash, TaskOutcome-Qualitätsgate und vorbereitetem End-to-End-Gate
 - Pilot-Ledger-Messung
+- GitHub-README, Evidence-Seite, aktuelle Release Notes, Changelog und Publishing-Runbook gegen belegte Spar- und Qualitätszahlen
 - lokaler Plugin-Kandidat
 - Package-Shape
 - PackageDryRunAuditV1
 - PackageInstallSmokeAuditV1
 - PluginInstallSmokeAuditV1
 
-Das Gate `verified-release-audit` erfordert, dass alle Anforderungen verifiziert sind. Der Standardlauf startet einen Pilot mit temporärem Ledger-Verzeichnis, damit keine Projektdateien beschrieben werden; mit `--ledger-dir` kann die Spur bewusst an einen Ort gelegt werden. Der Audit führt außerdem eine ExperimentPlan-Probe, eine ExperimentScript-Probe, eine ExperimentEvidenceAudit-Probe, eine ExperimentRun/Router/GatePath-Probe, einen Package-Dry-Run, einen Package-Install-Smoke und einen Plugin-Install-Smoke aus. Der Package-Smoke nutzt `--ignore-scripts`, damit keine rekursive `prepack`-Prüfung entsteht. Das Audit ersetzt weder Veröffentlichung noch Plugin-Directory-Validierung. Es sagt nur: Die lokale Belegkette trägt das definierte Ziel gerade.
+Das Gate `verified-release-audit` erfordert, dass alle Anforderungen verifiziert sind. Der Standardlauf startet einen Pilot mit temporärem Ledger-Verzeichnis, damit keine Projektdateien beschrieben werden; mit `--ledger-dir` kann die Spur bewusst an einen Ort gelegt werden. Der Audit führt außerdem eine ExperimentPlan-Probe, eine ExperimentScript-Probe, eine ExperimentEvidenceAudit-Probe, eine ExperimentRun/Router/GatePath-Probe, einen GitHub-Claims-Audit, einen Package-Dry-Run, einen Package-Install-Smoke und einen Plugin-Install-Smoke aus. Der Claims-Audit verhindert, dass README oder Release Notes bessere Sparzahlen zeigen als die belegte Scorecard, der GatePath und der Pilot tragen. Der Package-Smoke nutzt `--ignore-scripts`, damit keine rekursive `prepack`-Prüfung entsteht. Das Audit ersetzt weder Veröffentlichung noch Plugin-Directory-Validierung. Es sagt nur: Die lokale Belegkette trägt das definierte Ziel gerade.
 
 ## PackageDryRunAudit v1
 
@@ -500,14 +505,34 @@ In `ContextPlanV1` setzt dieselbe Policy zusätzlich Startbudget- und Risk-Lane-
 
 `sparkompass calibrate` und `sparkompass_calibrate_context` erzeugen `ContextCalibrationV1`.
 
-Die Kalibrierung testet mehrere Zielgrößen ohne automatische Erweiterung. Dadurch findet sie die kleinste Zielgröße, die direkt `verified-publishable` ist. Wenn `--expect` oder `--expect-regex` gesetzt sind, müssen Kandidaten auch dieses Akzeptanz-Orakel bestehen. Das Ergebnis enthält:
+Die Kalibrierung testet mehrere Zielgrößen ohne automatische Erweiterung. Dadurch findet sie zunächst den kleinsten kompakten Diagnose-Kandidaten, der direkt `verified-publishable` ist. Als `verified-calibration` gilt das Ergebnis aber nur, wenn ein explizites `--expect` oder `--expect-regex` gesetzt wurde, der gewählte Kandidat dieses Akzeptanz-Orakel besteht und das Oracle auf Gegenfakten sensitiv reagiert. Ohne Oracle meldet die Kalibrierung `calibration-needs-oracle`, bei zu breiten Erwartungen `oracle-insensitive`; in beiden Fällen wird keine empfohlene Zielgröße freigegeben.
+
+Das Ergebnis enthält:
 
 - Suchbereich und Schrittweite
 - Risikoprofil und Policy
-- alle getesteten Zielgrößen mit Status, Gründen, Tokens, Sparquote und Oracle-Status
+- `status`, `oracle_gate`, `explicit_oracle_present`, Diagnose-`candidate` und verifizierte `selected`-Zielgröße
+- alle getesteten Zielgrößen mit Status, Gründen, Tokens, Sparquote, Oracle-Status und Oracle-Sensitivität
 - empfohlene Zielgröße und passenden `sparkompass pack`-Hinweis
 
 Damit wird aus einem manuellen Prozentwert ein reproduzierbares Budgetverfahren.
+
+## ContextAutoTarget v1
+
+`sparkompass pack --target auto`, `sparkompass pack --auto-target` und `sparkompass_pack` mit `autoTarget: true` erzeugen zusätzlich `ContextAutoTargetV1` im `ContextPackReceiptV1`.
+
+Auto-Target nutzt dieselbe Kalibrierung wie `calibrate`, baut danach aber nur dann ein ContextPack mit der kleinsten direkt verifizierten Zielgröße, wenn ein explizites `--expect` oder `--expect-regex` als Akzeptanz-Orakel gesetzt wurde, dieses Oracle im Kandidaten besteht und die Sensitivitätsprüfung besteht. Zusätzlich wird das normale Ziel des Risikoprofils immer als Baseline-Versuch mitgemessen, selbst wenn die Suchschrittweite diese Zielgröße überspringen würde. Das ist kein aggressives Kürzen ohne Netz: Die Auswahl gilt nur als `verified-auto-target`, wenn 100% kritische Anker, 100% Quellbelege, keine riskante Verdichtung, der Qualitätsvertrag, `oracle_gate: verified-oracle` und der Vergleich gegen die Baseline tragen. Ohne explizites Oracle wird `auto-target-needs-oracle` gemeldet und die normale Profil-Baseline genutzt; bei unsensitiven Erwartungen wird `oracle-insensitive` gemeldet. Mögliche Kandidaten-Ersparnis bleibt dann Diagnose, aber kein verifizierter Vorteil.
+
+Das Artefakt enthält:
+
+- Baseline-Ziel des Risikoprofils, zum Beispiel 35% bei `balanced`
+- Baseline-Gate und Baseline-Tokens für den Vergleich
+- Kandidaten-Ziel und gewähltes Ziel; ohne Oracle bleibt das gewählte Ziel die Baseline
+- `oracle_gate`, `selected_not_more_tokens_than_baseline` und `savings_gate`
+- Zusatzersparnis gegenüber der Baseline als lokale Token-Schätzung
+- alle getesteten Zielgrößen mit Gate, Gründen, Tokens, Sparquote, Oracle-Status und Sensitivitätsstatus
+
+Wenn keine direkte kompakte Zielgröße verifiziert wird, bleibt die normale Pack-Fallback-Policy aktiv: erst Erweiterung, dann Vollkontext.
 
 ## SavingsLedger v1
 
@@ -519,8 +544,10 @@ Der Ledger speichert pro ContextPack:
 - Gate-Status, Risikoprofil, Qualitätsstatus und Fallback-Modus
 - originale, kompakte und gelieferte Tokens
 - echte gelieferte Ersparnis
+- qualitätsgegatede positive gelieferte Ersparnis aus `verified-publishable` und `verified-expanded-context` Packs
 - theoretische Kompakt-Kandidaten-Ersparnis
 - kritische Anker-Erhaltung und Quellbeleg-Abdeckung
+- Auto-Target-Status, `savings_gate`, gewählte Zielgröße und Zusatzersparnis, wenn `ContextAutoTargetV1` vorhanden ist
 
 Die Summen zeigen:
 
@@ -529,8 +556,9 @@ Die Summen zeigen:
 - p95 gelieferte und gesparte Tokens
 - Fallback-Rate, erweiterte ContextPacks und Vollkontext-Fallbacks
 - schlechteste kritische Anker-Erhaltung und Quellbeleg-Abdeckung
+- Auto-Target-Einträge, verifizierte `verified-additional-saving`-Einträge, verifizierte Oracle-Gates, Zusatzersparnis, Savings-Gate-Fehler und Oracle-Gate-Fehler
 
-Damit wird der einzelne Sparbalken zu einer wiederholbaren Nutzenspur: Ein Team kann sehen, ob Sparkompass im Alltag tatsächlich weniger Kontext an Codex liefert, ohne die eigenen Qualitätsgates zu verschlechtern.
+Damit wird der einzelne Sparbalken zu einer wiederholbaren Nutzenspur: Ein Team kann sehen, ob Sparkompass im Alltag tatsächlich weniger Kontext an Codex liefert, ohne die eigenen Qualitätsgates zu verschlechtern. Erweiterte, aber verifizierte ContextPacks zählen dabei nur als qualitätsgegatede Ersparnis, wenn sie tatsächlich weniger gelieferte Tokens als der Originalkontext haben. Vollkontext-Fallbacks und andere Null-Ersparnis-Fälle bleiben sichtbar, zählen aber nicht als Sparer.
 
 ## ShadowRun v1
 
@@ -720,7 +748,7 @@ Der Ledger speichert pro Handoff:
 - Prompt-Cache-Layout, Prefix-/Tail-Tokens und Handoff-Hashes
 - Anzahl sofortiger und nachladbarer Evidence-Refs
 
-Die Summen zeigen verifizierte und review-pflichtige Handoffs, p95 Startprompt-Tokens, p95 gesparte Starttokens, blockierte Handoffs und die gesamte geschätzte Startkontext-Ersparnis. Das ist bewusst eine Planungsmetrik: Es beweist, dass Sparkompass kleinere Startprompts vorbereitet hat, nicht dass OpenAI diese Einsparung exakt so abgerechnet hat.
+Die Summen zeigen verifizierte und review-pflichtige Handoffs, qualitätsgegatede sparende Handoffs, p95 Startprompt-Tokens, p95 gesparte Starttokens, blockierte Handoffs, gesamte geschätzte Startkontext-Ersparnis und qualitätsgegatede positive Startkontext-Ersparnis nur aus `verified-handoff` Einträgen, deren Startprompt wirklich kleiner als das geschätzte Inventar ist. Ein sicherer Null-Ersparnis-Handoff bleibt verifiziert sichtbar, zählt aber nicht als Sparbeleg. Das ist bewusst eine Planungsmetrik: Es beweist, dass Sparkompass kleinere Startprompts vorbereitet hat, nicht dass OpenAI diese Einsparung exakt so abgerechnet hat.
 
 ## SparkompassUserPromptHookAdvisory v1
 
@@ -740,17 +768,20 @@ Human-Reports spiegeln keine Prompt-Inhalte zurück. Das Artefakt ist ein lokale
 
 `sparkompass prompt-prepare` und `sparkompass_prepare_prompt` erzeugen `SparkompassPromptPreparationV1`. Das Artefakt ist die aktive Schicht hinter der Advisory: Es nimmt eine geplante große Eingabe oder ein Hook-Payload, extrahiert den eigentlichen User-Prompt und baut daraus einen sendbaren kompakten Prompt.
 
+Mit `--target auto`, `--auto-target` oder MCP `autoTarget: true` nutzt PromptPreparation zuerst `ContextAutoTargetV1`. Der Auto-Target-Teil gilt auch hier nur mit bestandenem und sensitivem explizitem Oracle als verifiziert; ohne `--expect` oder `--expect-regex` bleibt die Profil-Baseline aktiv. Dadurch wird nicht nur der gelieferte ContextPack-Kontext kleiner, sondern auch der wirklich sendbare Prompt gegen das Auto-Target-Receipt gemessen.
+
 Der vorbereitete Prompt enthält:
 
 - `context_pack_id`, Source-Hash und Delivered-Context-Hash
 - ContextPack-Gate, Fallback-Modus und kritische Anker
-- Quellbeleg-Abdeckung und Akzeptanz-Orakel-Status
+- Auto-Target-Status, Oracle-Gate, gewählte Zielgröße und Zusatzersparnis, wenn Auto-Target aktiv war
+- Quellbeleg-Abdeckung, Akzeptanz-Orakel-Status und Oracle-Sensitivität
 - kompakten gelieferten Kontext statt Rohprompt
 - Sparbalken für gelieferten ContextPack-Kontext und für den tatsächlich sendbaren Prompt inklusive Metadaten
 
 Die Gate-Regel folgt `pack`: Kritische Anker, Quellbelege und Erwartungen müssen bestehen; wenn die kompakte Fassung unsicher ist, wird erweitert oder auf Vollkontext zurückgefallen. Dadurch wird das Ergebnis nicht schlechter gemacht, nur um Tokens zu sparen. Auch dieses Artefakt ist kein interner Codex-Request-Rewriter. Es ist der belegte Prompt, den ein Nutzer oder Agent bewusst senden kann.
 
-`sparkompass prompt-prepare --ledger`, `sparkompass prompt-ledger report` und `sparkompass_prompt_preparation_ledger` erzeugen `PromptPreparationLedgerV1`. Der Ledger unterscheidet die gelieferte ContextPack-Ersparnis von der sendbaren Prompt-Ersparnis inklusive Metadaten. Er berichtet verifizierte und review-pflichtige Vorbereitungen, p95 sendbare Prompt-Tokens, p95 gesparte Tokens, Fallback-Rate, Vollkontext-Fallbacks, schlechteste kritische Anker-Erhaltung und schlechteste Quellbeleg-Abdeckung. Damit wird sichtbar, ob diese Codex-nahe Fähigkeit über mehrere Nutzungen wirklich spart und dabei verifiziert bleibt.
+`sparkompass prompt-prepare --ledger`, `sparkompass prompt-ledger report` und `sparkompass_prompt_preparation_ledger` erzeugen `PromptPreparationLedgerV1`. Der Ledger unterscheidet die gelieferte ContextPack-Ersparnis von der sendbaren Prompt-Ersparnis inklusive Metadaten und weist zusätzlich die qualitätsgegatede sendbare Prompt-Ersparnis nur aus verifizierten kompakten oder erweiterten Vorbereitungen mit positiver sendbarer Ersparnis aus. Verifizierte Vollkontext-Fallbacks und verifizierte Null-Ersparnis-Fälle bleiben als sicherer Qualitätsausweg sichtbar, zählen aber nicht als sparende Vorbereitung. Er berichtet verifizierte und review-pflichtige Vorbereitungen, qualitätsgegatede sparende Vorbereitungen, p95 sendbare Prompt-Tokens, p95 gesparte Tokens, Fallback-Rate, Vollkontext-Fallbacks, schlechteste kritische Anker-Erhaltung und schlechteste Quellbeleg-Abdeckung. Wenn Auto-Target aktiv ist, werden zusätzlich Auto-Target-Einträge, verifizierte `verified-additional-saving`-Einträge, verifizierte Oracle-Gates, Zusatzersparnis, Savings-Gate-Fehler und Oracle-Gate-Fehler summiert. Damit wird sichtbar, ob diese Codex-nahe Fähigkeit über mehrere Nutzungen wirklich spart und dabei verifiziert bleibt.
 
 ## ContextEnvelopeLedger v1
 
@@ -914,9 +945,9 @@ Das ist für lange Test-, Build- und Lint-Ausgaben gedacht: Codex bekommt zuerst
 
 Der Benchmark prüft außerdem Gegenfakten: Für jede erwartete Soll-Fakt oder jedes Soll-Muster wird der passende Kontext testweise aus dem gelieferten Kontext entfernt. Das Benchmark-Gate bleibt nur grün, wenn das Oracle diesen Verlust erkennt. So testen wir nicht nur die Kompression, sondern auch die Wächter, die über ihre Qualität entscheiden.
 
-Jeder Fall erzeugt zusätzlich ein `BenchmarkTaskOutcomeSummaryV1`, abgeleitet aus einem `TaskOutcomeReceiptV1`. Dieses Receipt gilt nur als verifiziert, wenn der simulierte Aufgaben-Output `TASK_SUCCESS=true`, `REGRESSION=false` und `COUNTERFACTUALS_OK=true` enthält und die Receipt-Prüfung bestanden ist. `BenchmarkContextPackQualityV1` prüft daneben die Pack-Qualität selbst: erlaubtes Gate, 100% kritische Anker, 100% Quellbelege, keine riskanten ContextPacks und keine Vollkontext-Fallbacks. `BenchmarkEfficiencyMetricsV1` macht die Produktkennzahl sichtbar: gelieferte Kontexttokens plus Benchmark-Outputtokens pro verifiziertem Task, Task-Erfolgsdelta gegen Vollkontext, p95 gesparte Tokens, Fallback-Rate, Nachlade-Rate und Cache-Hit-Rate. Damit wird der Benchmark dichter an die reale Codex-Frage gebunden: Hat der kleinere Kontext die Aufgabe noch erfolgreich getragen, und wie teuer war dieser verifizierte Erfolg?
+Jeder Fall erzeugt zusätzlich ein `BenchmarkTaskOutcomeSummaryV1`, abgeleitet aus einem `TaskOutcomeReceiptV1`. Dieses Receipt gilt nur als verifiziert, wenn der simulierte Aufgaben-Output `TASK_SUCCESS=true`, `REGRESSION=false` und `COUNTERFACTUALS_OK=true` enthält, das Output-Orakel sensitiv ist und die Receipt-Prüfung bestanden ist. `BenchmarkContextPackQualityV1` prüft daneben die Pack-Qualität selbst: erlaubtes Gate, 100% kritische Anker, 100% Quellbelege, keine riskanten ContextPacks und keine Vollkontext-Fallbacks. `BenchmarkEfficiencyMetricsV1` macht die Produktkennzahl sichtbar: gelieferte Kontexttokens plus Benchmark-Outputtokens pro verifiziertem Task, Task-Erfolgsdelta gegen Vollkontext, p95 gesparte Tokens, Fallback-Rate, Nachlade-Rate und Cache-Hit-Rate. Damit wird der Benchmark dichter an die reale Codex-Frage gebunden: Hat der kleinere Kontext die Aufgabe noch erfolgreich getragen, und wie teuer war dieser verifizierte Erfolg?
 
-Ein kleiner Failure-Corpus prüft typische gefährliche Verlustklassen: Negationen und Flags, exakte Zahlen/Versionen/Prioritäten, abgeschnittene Stacktraces, gleichnamige Symbole, Sicherheits-Datenfluss, dynamische Imports und Monorepo-Abhängigkeiten. `FailureCorpusCoverageV1` macht diese Pflichtklassen maschinenlesbar; `verified-benchmark` bleibt nur grün, wenn alle Pflichtklassen vorhanden und verifiziert sind. Der Benchmark nutzt im Repo die Fixture-Dateien und fällt außerhalb davon auf eingebaute Fixtures zurück. Die Details stehen in [docs/failure-corpus.md](failure-corpus.md).
+Ein kleiner Failure-Corpus prüft typische gefährliche Verlustklassen: Negationen und Flags, exakte Zahlen/Versionen/Prioritäten, abgeschnittene Stacktraces, gleichnamige Symbole, Sicherheits-Datenfluss, dynamische Imports, Monorepo-Abhängigkeiten, Env-/URL-/Permission-Werte, numerische Grenzen mit Einheiten, boolesche Policy- und Moduswerte, Diff-Polarität, Reihenfolge und Präzedenz, Zeitfenster und Ablaufzeiten, API-/Schema-Verträge, Datenbank-/Migrationsverträge, Idempotenz-/Nebenlaeufigkeitsverträge, Locale-/Encoding-/Normalisierungsverträge für Umlaute und Unicode, Auth-/Scope-/Rollenverträge, Crypto-/Signatur-/Hashverträge, Geld-/Währungs-/Rundungsverträge, destruktive Operationen, Regex-/Glob-/Matcher-Verträge sowie Web-Security-Header-/Cookie-Verträge. `FailureCorpusCoverageV1` macht diese Pflichtklassen maschinenlesbar; `verified-benchmark` bleibt nur grün, wenn alle Pflichtklassen vorhanden und verifiziert sind. Der Benchmark nutzt im Repo die Fixture-Dateien und fällt außerhalb davon auf eingebaute Fixtures zurück. Die Details stehen in [docs/failure-corpus.md](failure-corpus.md).
 
 Der Report enthält zusätzlich Worst-Case- und Kostenmetriken:
 
@@ -942,7 +973,7 @@ Mehr Sparen kann schlechtere Antworten erzeugen. Mehr Schutz kann die Zielgröß
 - Werden Fehlercodes, Dateipfade und Done-Kriterien gehalten?
 - Besteht ein konkreter ShadowRun gegen dieselben Soll-Fakten und Soll-Muster wie der Vollkontext?
 - Lässt sich ein gespeichertes ContextPack-Receipt gegen die Originalquelle und, wenn vorhanden, den gelieferten Kontext erneut verifizieren?
-- Gibt es für wichtige Änderungen ein TaskOutcomeReceipt mit bestandenem Exit-Code, Output-Orakel und optionaler Receipt-Verifikation?
+- Gibt es für wichtige Änderungen ein TaskOutcomeReceipt mit bestandenem Exit-Code, sensitivem Output-Orakel und optionaler Receipt-Verifikation?
 - Erkennen die Benchmark-Orakel absichtlich entfernte Soll-Fakten?
 - Bestehen alle Failure-Corpus-Fälle?
 - Wird ein schwacher Einzelfall sichtbar, statt im Durchschnitt zu verschwinden?

@@ -52,7 +52,33 @@ describe("ContextPack Receipt v1", () => {
     assert.equal(pack.receipt.acceptance_oracle.source.success, true);
     assert.equal(pack.receipt.acceptance_oracle.delivered.success, true);
     assert.equal(pack.receipt.acceptance_oracle.delivered.matched_count, 2);
+    assert.equal(pack.receipt.acceptance_oracle.sensitivity.source.success, true);
+    assert.equal(pack.receipt.acceptance_oracle.sensitivity.delivered.success, true);
+    assert.equal(pack.receipt.gate.requirements.acceptance_oracle_sensitivity, true);
     assert.equal(pack.receipt.gate.requirements.acceptance_oracle_success, true);
+  });
+
+  it("keeps broad insensitive oracles out of the verified gate", () => {
+    const source = [
+      "DEBUG first repeated log marker.",
+      "DEBUG second repeated log marker.",
+      "KEEP_ANCHOR remains."
+    ].join("\n");
+
+    const pack = buildContextPack(source, {
+      label: "broad-oracle.log",
+      targetPercent: 90,
+      expansionTargets: [],
+      keep: ["KEEP_ANCHOR"],
+      expectRegex: ["DEBUG"]
+    });
+
+    assert.equal(pack.receipt.acceptance_oracle.source.success, true);
+    assert.equal(pack.receipt.acceptance_oracle.sensitivity.source.success, false);
+    assert.deepEqual(pack.receipt.acceptance_oracle.sensitivity.source.missed, ["/DEBUG/"]);
+    assert.equal(pack.receipt.gate.status, "acceptance-oracle-source-insensitive");
+    assert.ok(pack.receipt.fallback.reasons.includes("source-acceptance-oracle-insensitive"));
+    assert.equal(pack.context.text, source);
   });
 
   it("falls back when the compact context misses an expected fact", () => {
@@ -80,6 +106,7 @@ describe("ContextPack Receipt v1", () => {
     assert.ok(pack.receipt.fallback.reasons.includes("acceptance-oracle-miss"));
     assert.equal(pack.receipt.acceptance_oracle.source.success, true);
     assert.equal(pack.receipt.acceptance_oracle.delivered.success, true);
+    assert.equal(pack.receipt.acceptance_oracle.sensitivity.delivered.success, true);
     assert.equal(pack.context.text, source);
   });
 
@@ -180,6 +207,49 @@ describe("ContextPack Receipt v1", () => {
     assert.equal(pack.receipt.schema, "ContextPackReceiptV1");
     assert.equal(pack.receipt.critical_anchors.retention_percent, 100);
     assert.equal(pack.receipt.acceptance_oracle.delivered.success, true);
+    assert.equal(pack.receipt.acceptance_oracle.sensitivity.delivered.success, true);
+  });
+
+  it("CLI pack supports auto-target calibration before building a receipt", () => {
+    const source = [
+      "ERROR AUTH_RESET_TOKEN_EXPIRED in src/auth/session.ts",
+      ...Array.from({ length: 80 }, (_, index) => (
+        `debug noise ${index} repeated filler text that can disappear safely`
+      )),
+      "Done when: Auth reset test passes"
+    ].join("\n");
+    const result = spawnSync(process.execPath, [
+      "./bin/codex-sparkompass.mjs",
+      "pack",
+      "--text",
+      source,
+      "--target",
+      "auto",
+      "--keep",
+      "AUTH_RESET_TOKEN_EXPIRED",
+      "--keep",
+      "src/auth/session.ts",
+      "--expect",
+      "AUTH_RESET_TOKEN_EXPIRED",
+      "--expect-regex",
+      "src/auth/session\\.ts",
+      "--json"
+    ], {
+      encoding: "utf8"
+    });
+
+    assert.equal(result.status, 0, result.stderr);
+    const pack = JSON.parse(result.stdout);
+    assert.equal(pack.autoTarget.status, "verified-auto-target");
+    assert.equal(pack.autoTarget.oracle_gate, "verified-oracle");
+    assert.equal(pack.autoTarget.explicit_oracle_present, true);
+    assert.equal(pack.receipt.context_selection.auto_target.selected_target_percent, 10);
+    assert.equal(pack.receipt.context_selection.auto_target.savings_gate, "verified-additional-saving");
+    assert.equal(pack.receipt.context_selection.auto_target.selected_not_more_tokens_than_baseline, true);
+    assert.ok(pack.receipt.context_selection.auto_target.additional_saved_tokens_vs_baseline > 0);
+    assert.equal(pack.receipt.gate.status, "verified-publishable");
+    assert.equal(pack.receipt.acceptance_oracle.delivered.success, true);
+    assert.equal(pack.receipt.acceptance_oracle.sensitivity.delivered.success, true);
   });
 
   it("CLI pack honors risk profiles", () => {

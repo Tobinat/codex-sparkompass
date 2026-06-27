@@ -4,6 +4,7 @@ import path from "node:path";
 import { runBenchmark } from "./benchmark.mjs";
 import { buildContextEnvelope } from "./context-envelope.mjs";
 import { buildContextHandoffReceipt } from "./context-handoff.mjs";
+import { buildCalibratedContextPack } from "./context-calibration.mjs";
 import { buildContextPack } from "./context-pack.mjs";
 import { runDogfood } from "./dogfood.mjs";
 import { appendEnvelopeToLedger, buildEnvelopeLedgerReport, DEFAULT_ENVELOPE_LEDGER_PATH } from "./envelope-ledger.mjs";
@@ -20,9 +21,10 @@ const DEFAULT_PILOT_LEDGER_DIR = ".sparkompass/pilot-run";
 const DEFAULT_PILOT_GOAL = "Codex Sparkompass Pilot: verifizierten Kontextlauf messen";
 const DEFAULT_PILOT_FILES = [
   {
-    file: "README.md",
-    keep: ["Sparkompass", "ContextPackReceiptV1", "Sparbalken"],
-    expect: ["ContextPackReceiptV1"]
+    file: "test/fixtures/plan.md",
+    keep: ["AUTH_RESET_TOKEN_EXPIRED", "Sparbalken"],
+    expect: ["AUTH_RESET_TOKEN_EXPIRED"],
+    expectRegex: ["Sparbalken"]
   },
   {
     file: "docs/strategy.md",
@@ -42,6 +44,7 @@ export async function runPilot(rootPath, options = {}) {
   const minSaving = Number(options.minSaving) || 35;
   const minAnchors = Number(options.minAnchors) || 75;
   const riskProfile = String(options.riskProfile || "balanced");
+  const autoTarget = options.autoTarget !== false;
   const ledgerDir = resolveLedgerDir(root, options.ledgerDir || options.out || DEFAULT_PILOT_LEDGER_DIR);
   const ledgerPaths = buildLedgerPaths(ledgerDir);
   const selectedFiles = await selectPilotFiles(root, options);
@@ -63,7 +66,7 @@ export async function runPilot(rootPath, options = {}) {
   for (const selected of selectedFiles) {
     const absolute = path.join(root, selected.file);
     const sourceText = await fs.readFile(absolute, "utf8");
-    const pack = buildContextPack(sourceText, {
+    const packOptions = {
       label: selected.file,
       targetPercent,
       riskProfile,
@@ -76,8 +79,14 @@ export async function runPilot(rootPath, options = {}) {
         ...asArray(options.expect),
         ...selected.expect
       ]),
-      expectRegex: asArray(options.expectRegex)
-    });
+      expectRegex: unique([
+        ...asArray(options.expectRegex),
+        ...asArray(selected.expectRegex)
+      ])
+    };
+    const pack = autoTarget
+      ? buildCalibratedContextPack(sourceText, packOptions)
+      : buildContextPack(sourceText, packOptions);
 
     await appendReceiptToLedger(root, pack.receipt, {
       out: ledgerPaths.savings,
@@ -101,7 +110,7 @@ export async function runPilot(rootPath, options = {}) {
     expect: unique([
       ...asArray(options.handoffExpect),
       ...asArray(options.expect).slice(0, 3),
-      "ContextPackReceiptV1"
+      "ContextAutoTargetV1"
     ]),
     expectRegex: asArray(options.handoffExpectRegex),
     budget: parsePositiveInteger(options.budget, 900),
@@ -129,20 +138,22 @@ export async function runPilot(rootPath, options = {}) {
   const promptPreparation = buildPromptPreparation(linkedPack?.sourceText || "", {
     label: `${linkedPack?.file || "pilot"}:prompt-preparation`,
     goal: String(options.goal || DEFAULT_PILOT_GOAL),
+    autoTarget,
     targetPercent,
     riskProfile,
     mode: String(options.mode || "auto"),
     keep: unique([
       ...asArray(options.keep),
-      ...asArray(selectedFiles[0]?.keep),
-      "ContextPackReceiptV1"
+      ...asArray(selectedFiles[0]?.keep)
     ]),
     expect: unique([
       ...asArray(options.expect).slice(0, 3),
-      ...asArray(selectedFiles[0]?.expect),
-      "ContextPackReceiptV1"
+      ...asArray(selectedFiles[0]?.expect)
     ]),
-    expectRegex: asArray(options.expectRegex)
+    expectRegex: unique([
+      ...asArray(options.expectRegex),
+      ...asArray(selectedFiles[0]?.expectRegex)
+    ])
   });
   await appendPromptPreparationToLedger(root, promptPreparation, {
     out: ledgerPaths.promptPreparation,
@@ -214,7 +225,8 @@ export async function runPilot(rootPath, options = {}) {
     dogfood,
     benchmark,
     ledgers,
-    scorecard
+    scorecard,
+    autoTargetEvidence: buildAutoTargetEvidence({ packs, promptPreparation })
   });
 
   return {
@@ -247,7 +259,8 @@ export async function runPilot(rootPath, options = {}) {
       task_outcome: taskOutcome,
       handoff: summarizeHandoff(handoff),
       envelope: summarizeEnvelope(envelope),
-      scorecard: summarizeScorecard(scorecard)
+      scorecard: summarizeScorecard(scorecard),
+      auto_target: buildAutoTargetEvidence({ packs, promptPreparation })
     },
     caveats: [
       "Token counts are local estimates for planning, not billing data.",
@@ -269,11 +282,12 @@ Gate: ${pilot.gate.status}
 - Dateien: ${pilot.selected_files.join(", ")}
 - Dogfood: ${pilot.artifacts.dogfood.gate.publishable ? "verified-publishable" : "needs-review"}, ${metrics.dogfood_average_saving_percent}% Ersparnis, p95 ${formatNumber(metrics.dogfood_p95_delivered_tokens)} Tokens
 - Benchmark: ${pilot.artifacts.benchmark.totals.verified ? "verified-benchmark" : "needs-review"}, ${metrics.benchmark_context_successes}/${metrics.benchmark_cases} Kontext, Regressionen ${metrics.benchmark_regressions}
-- SavingsLedger: ${metrics.savings_entries} Einträge, ${metrics.delivered_savings_percent}% echte Ersparnis, Fallbacks ${metrics.full_context_fallbacks}
+- SavingsLedger: ${metrics.verified_savings_entries}/${metrics.savings_entries} verifiziert (${metrics.quality_gated_saving_entries} sparend), ${metrics.delivered_savings_percent}% echte Ersparnis, qualitätsgegated ${metrics.quality_gated_delivered_savings_percent}%, Fallbacks ${metrics.full_context_fallbacks}
 - TaskOutcomeLedger: ${metrics.verified_tasks}/${metrics.task_entries} verifiziert, ${formatNumber(metrics.context_tokens_per_verified_task)} Context-Tokens/verifiziertem Task
-- HandoffLedger: ${metrics.verified_handoffs}/${metrics.handoff_entries} verifiziert, ${metrics.start_context_savings_percent}% Startkontext-Ersparnis
+- HandoffLedger: ${metrics.verified_handoffs}/${metrics.handoff_entries} verifiziert (${metrics.quality_gated_handoff_saving_handoffs} sparend), ${metrics.start_context_savings_percent}% Startkontext-Ersparnis, qualitätsgegated ${metrics.quality_gated_start_context_savings_percent}%
 - EnvelopeLedger: ${metrics.verified_envelopes}/${metrics.envelope_entries} verifiziert, ${metrics.prefix_reuse_percent}% Prefix-Reuse
-- PromptPreparationLedger: ${metrics.verified_prompt_preparations}/${metrics.prompt_preparation_entries} verifiziert, ${metrics.sendable_prompt_savings_percent}% sendbare Prompt-Ersparnis
+- PromptPreparationLedger: ${metrics.verified_prompt_preparations}/${metrics.prompt_preparation_entries} verifiziert (${metrics.quality_gated_prompt_saving_preparations} sparend), ${metrics.sendable_prompt_savings_percent}% sendbare Prompt-Ersparnis, qualitätsgegated ${metrics.verified_sendable_prompt_savings_percent}%
+- Auto-Target: ${metrics.verified_auto_target_packs}/${metrics.auto_target_packs} Packs, Prompt ${metrics.prompt_preparation_auto_target_status}/${metrics.prompt_preparation_auto_target_savings_gate}/${metrics.prompt_preparation_auto_target_oracle_gate}, zusätzlich ca. ${formatNumber(metrics.auto_target_additional_saved_tokens)} Tokens
 
 ## Blocker
 
@@ -299,7 +313,8 @@ async function selectPilotFiles(root, options = {}) {
     ? explicit.map((file) => ({
       file: String(file),
       keep: asArray(options.keep),
-      expect: asArray(options.expect)
+      expect: asArray(options.expect),
+      expectRegex: asArray(options.expectRegex)
     }))
     : DEFAULT_PILOT_FILES;
   const selected = [];
@@ -347,19 +362,31 @@ function buildPilotTaskOutput({ dogfood, benchmark, packs, handoff, envelope, pr
     `Handoff gate: ${handoff.gate.status}`,
     `Envelope gate: ${envelope.gate.status}`,
     `PromptPreparation gate: ${promptPreparation.gate.status}`,
+    `PromptPreparation auto-target: ${promptPreparation.context_pack.auto_target?.status || "not-used"}`,
+    `PromptPreparation auto-target savings gate: ${promptPreparation.context_pack.auto_target?.savings_gate || "not-used"}`,
     `PromptPreparation sendable savings: ${promptPreparation.savings.sendable_prompt.percent}%`
   ].join("\n");
 }
 
-function buildPilotGate({ dogfood, benchmark, ledgers, scorecard }) {
+export function buildPilotGate({ dogfood, benchmark, ledgers, scorecard, autoTargetEvidence }) {
   const blockers = [];
   if (!dogfood.gate.publishable) blockers.push("dogfood-not-publishable");
   if (!benchmark.totals.verified) blockers.push("benchmark-not-verified");
   if (!ledgers.savings.totals.verified_entries) blockers.push("no-verified-savings-ledger-entry");
+  if (!ledgers.savings.totals.quality_gated_saving_entries) {
+    blockers.push("no-quality-gated-savings-ledger-entry");
+  }
   if (!ledgers.task_outcome.totals.verified_tasks) blockers.push("no-verified-task-outcome-ledger-entry");
   if (!ledgers.envelope.totals.verified_envelopes) blockers.push("no-verified-envelope-ledger-entry");
   if (!ledgers.handoff.totals.verified_handoffs) blockers.push("no-verified-handoff-ledger-entry");
+  if (!ledgers.handoff.totals.quality_gated_handoff_saving_handoffs) {
+    blockers.push("no-quality-gated-handoff-saving");
+  }
   if (!ledgers.prompt_preparation.totals.verified_preparations) blockers.push("no-verified-prompt-preparation-ledger-entry");
+  if (!ledgers.prompt_preparation.totals.quality_gated_prompt_saving_preparations) {
+    blockers.push("no-quality-gated-prompt-saving-preparation");
+  }
+  if (!autoTargetEvidence?.prompt_preparation_verified) blockers.push("prompt-preparation-auto-target-not-verified");
   if (!scorecard.release_readiness.verified) blockers.push("scorecard-not-verified");
 
   return {
@@ -380,7 +407,11 @@ function buildPilotMetrics({ dogfood, benchmark, ledgers }) {
     benchmark_tokens_per_successful_case: benchmark.totals.tokens_per_successful_case,
     savings_entries: ledgers.savings.totals.entries,
     verified_savings_entries: ledgers.savings.totals.verified_entries,
+    quality_gated_saving_entries: ledgers.savings.totals.quality_gated_saving_entries,
     delivered_savings_percent: ledgers.savings.totals.delivered_savings_percent,
+    verified_delivered_savings_percent: ledgers.savings.totals.verified_delivered_savings_percent,
+    quality_gated_delivered_savings_percent: ledgers.savings.totals.quality_gated_delivered_savings_percent,
+    quality_gated_delivered_saved_tokens: ledgers.savings.totals.quality_gated_delivered_saved_tokens,
     full_context_fallbacks: ledgers.savings.totals.full_context_fallbacks,
     task_entries: ledgers.task_outcome.totals.entries,
     verified_tasks: ledgers.task_outcome.totals.verified_tasks,
@@ -392,12 +423,55 @@ function buildPilotMetrics({ dogfood, benchmark, ledgers }) {
     prefix_reuse_percent: ledgers.envelope.totals.prefix_reuse_percent,
     handoff_entries: ledgers.handoff.totals.entries,
     verified_handoffs: ledgers.handoff.totals.verified_handoffs,
+    quality_gated_handoff_saving_handoffs: ledgers.handoff.totals.quality_gated_handoff_saving_handoffs,
     start_context_savings_percent: ledgers.handoff.totals.start_context_savings_percent,
+    quality_gated_start_context_savings_percent: ledgers.handoff.totals.quality_gated_start_context_savings_percent,
+    quality_gated_start_context_saved_tokens: ledgers.handoff.totals.quality_gated_start_context_saved_tokens,
     prompt_preparation_entries: ledgers.prompt_preparation.totals.entries,
     verified_prompt_preparations: ledgers.prompt_preparation.totals.verified_preparations,
+    quality_gated_prompt_saving_preparations: ledgers.prompt_preparation.totals.quality_gated_prompt_saving_preparations,
     sendable_prompt_savings_percent: ledgers.prompt_preparation.totals.sendable_prompt_savings_percent,
     sendable_prompt_saved_tokens: ledgers.prompt_preparation.totals.sendable_prompt_saved_tokens,
-    p95_sendable_prompt_tokens: ledgers.prompt_preparation.totals.p95_sendable_prompt_tokens
+    verified_sendable_prompt_savings_percent: ledgers.prompt_preparation.totals.verified_sendable_prompt_savings_percent,
+    verified_sendable_prompt_saved_tokens: ledgers.prompt_preparation.totals.verified_sendable_prompt_saved_tokens,
+    p95_sendable_prompt_tokens: ledgers.prompt_preparation.totals.p95_sendable_prompt_tokens,
+    auto_target_packs: ledgers.savings.totals.auto_target_entries,
+    verified_auto_target_packs: ledgers.savings.totals.verified_auto_target_entries,
+    auto_target_additional_saved_tokens: ledgers.savings.totals.auto_target_additional_saved_tokens + ledgers.prompt_preparation.totals.auto_target_additional_saved_tokens,
+    prompt_preparation_auto_target_status: ledgers.prompt_preparation.entries.at(-1)?.auto_target_status || "not-used",
+    prompt_preparation_auto_target_oracle_gate: ledgers.prompt_preparation.entries.at(-1)?.auto_target_oracle_gate || "not-used",
+    prompt_preparation_auto_target_savings_gate: ledgers.prompt_preparation.entries.at(-1)?.auto_target_savings_gate || "not-used"
+  };
+}
+
+function buildAutoTargetEvidence({ packs, promptPreparation }) {
+  const packAutoTargets = packs.map((item) => item.pack.receipt.context_selection.auto_target).filter(Boolean);
+  const verifiedPackAutoTargets = packAutoTargets.filter((autoTarget) => (
+    autoTarget.status === "verified-auto-target"
+      && autoTarget.savings_gate === "verified-additional-saving"
+  ));
+  const promptAutoTarget = promptPreparation.context_pack.auto_target || {};
+  const packAdditionalSavedTokens = packAutoTargets.reduce((total, autoTarget) => (
+    total + (Number(autoTarget.additional_saved_tokens_vs_baseline) || 0)
+  ), 0);
+  const promptAdditionalSavedTokens = Number(promptAutoTarget.additional_saved_tokens_vs_baseline) || 0;
+
+  return {
+    schema: "SparkompassPilotAutoTargetEvidenceV1",
+    pack_auto_target_count: packAutoTargets.length,
+    verified_pack_auto_target_count: verifiedPackAutoTargets.length,
+    verified_pack_auto_target_oracle_count: packAutoTargets.filter((autoTarget) => (
+      autoTarget.oracle_gate === "verified-oracle"
+    )).length,
+    pack_additional_saved_tokens: packAdditionalSavedTokens,
+    prompt_preparation_status: promptAutoTarget.status || "not-used",
+    prompt_preparation_oracle_gate: promptAutoTarget.oracle_gate || "not-used",
+    prompt_preparation_savings_gate: promptAutoTarget.savings_gate || "not-used",
+    prompt_preparation_verified: promptAutoTarget.status === "verified-auto-target"
+      && promptAutoTarget.oracle_gate === "verified-oracle"
+      && promptAutoTarget.selected_not_more_tokens_than_baseline !== false,
+    prompt_preparation_additional_saved_tokens: promptAdditionalSavedTokens,
+    total_additional_saved_tokens: packAdditionalSavedTokens + promptAdditionalSavedTokens
   };
 }
 

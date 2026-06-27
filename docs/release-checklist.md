@@ -147,7 +147,9 @@ npm pack --dry-run
 - `Gate: verified-pilot-run`
 - `Gate: verified-impact`
 - at least one verified pack, prompt preparation, handoff, and task
+- at least one quality-gated positive saving pack, prompt preparation, and handoff
 - delivered ContextPack savings, sendable prompt savings, and estimated start-context savings are visible
+- quality-gated positive delivered, sendable prompt, start-context, and combined savings are visible separately from gross savings
 - combined context savings, p95 values, and blockers are visible
 - no full-context fallbacks, risky compressions, blocked handoffs, review prompts, or review tasks
 
@@ -169,7 +171,7 @@ npm pack --dry-run
 - `sparkompass_ablation_audit` and `sparkompass ablation-audit` report `ContextAblationAuditV1` with oracle-critical and ablation-safe units
 - `sparkompass_slim_context` and `sparkompass slim` report `ContextSlimmingPlanV1` with kept critical units, On-Demand move candidates, and additional start-context savings
 - `sparkompass_handoff_receipt` and `sparkompass handoff` report `ContextHandoffReceiptV1` with start prompt, visible savings, quality contract, prompt-cache layout, and MCP on-demand evidence
-- `sparkompass_handoff_ledger`, `sparkompass handoff --ledger`, and `sparkompass handoff-ledger report` report `ContextHandoffLedgerV1` with estimated start-context savings across handoffs
+- `sparkompass_handoff_ledger`, `sparkompass handoff --ledger`, and `sparkompass handoff-ledger report` report `ContextHandoffLedgerV1` with estimated and quality-gated positive start-context savings across handoffs
 - `sparkompass_scorecard` and `sparkompass scorecard` report `SparkompassScorecardV1` with release readiness, Dogfood/Benchmark gates, TaskOutcome totals, PromptPreparation totals, and ledger warnings
 - `sparkompass_pilot_run` and `sparkompass pilot` report `SparkompassPilotRunV1` and write verified Savings, PromptPreparation, TaskOutcome, Envelope, and Handoff pilot ledgers
 - `sparkompass_impact_report` and `sparkompass impact` report `SparkompassImpactReportV1` with delivered ContextPack savings, sendable prompt savings, start-context savings, verified prompts/tasks, p95 values, and quality blockers
@@ -178,8 +180,8 @@ npm pack --dry-run
 - `sparkompass_plugin_install_smoke` and `sparkompass plugin-smoke` report `PluginInstallSmokeAuditV1` with copied plugin CLI bridge, MCP bridge, cache-install bridge, real lookup tool-call, hook, and prompt-redaction checks
 - `sparkompass_release_audit` and `sparkompass release-audit` report `SparkompassReleaseAuditV1` with objective requirements mapped to local evidence, including ExperimentPlan, ExperimentScript, ExperimentEvidenceAudit, ExperimentRun/router, GatePath, package dry-run, package install-smoke, and plugin install-smoke evidence
 - `sparkompass_prompt_advisory`, `sparkompass prompt-advisory`, and the plugin hook report `SparkompassUserPromptHookAdvisoryV1` without echoing prompt contents
-- `sparkompass_prepare_prompt` and `sparkompass prompt-prepare` report `SparkompassPromptPreparationV1` with a sendable compact prompt, ContextPack gate, hashes, acceptance oracle, and savings bars
-- `sparkompass_prompt_preparation_ledger`, `sparkompass prompt-prepare --ledger`, and `sparkompass prompt-ledger report` report `PromptPreparationLedgerV1` with sendable prompt savings, verified/review preparations, p95 values, and fallbacks
+- `sparkompass_prepare_prompt` and `sparkompass prompt-prepare` report `SparkompassPromptPreparationV1` with a sendable compact prompt, ContextPack gate, optional ContextAutoTargetV1, hashes, acceptance oracle, and savings bars
+- `sparkompass_prompt_preparation_ledger`, `sparkompass prompt-prepare --ledger`, and `sparkompass prompt-ledger report` report `PromptPreparationLedgerV1` with sendable prompt savings, quality-gated positive saving preparations, verified/review preparations, p95 values, fallbacks, and Auto-Target savings-gate totals
 - `sparkompass_build_envelope` and `sparkompass envelope --previous-envelope` report `ContextEnvelopePrefixReuseV1`
 - `sparkompass_envelope_ledger` and `sparkompass envelope --ledger` report `ContextEnvelopeLedgerV1`
 - `sparkompass plan --cache` marks changed/added/stable units and prioritizes changed context
@@ -196,12 +198,12 @@ npm pack --dry-run
 - `sparkompass_slice_symbol` can return AST-backed `ProgramSliceV1` for JS/MJS with source span, calls, data hints, tests, and evidence
 - `sparkompass_trace_flow` can return `DataFlowTraceV1` with argument-to-parameter bindings across resolved calls
 - `sparkompass_savings_ledger` records and reports delivered-token savings from a receipt
-- `sparkompass_pack` records `acceptance_oracle`, supports `expectRegex`, and falls back when compact context misses an expected fact
-- `sparkompass_verify_receipt` and `sparkompass receipt verify` report `ContextPackReceiptVerificationV1` against original source evidence and optional delivered-context hash
+- `sparkompass_pack` records `acceptance_oracle`, supports `expectRegex`, checks Oracle sensitivity, and falls back when compact context misses an expected fact
+- `sparkompass_verify_receipt` and `sparkompass receipt verify` report `ContextPackReceiptVerificationV1` against original source evidence, optional delivered-context hash, and acceptance-oracle sensitivity
 - `sparkompass_verify_context_pack` and `sparkompass contextpack verify` report `ContextPackRegistryVerificationV1` by `context_pack_id` and run the underlying receipt/source hash verification
-- `sparkompass_contextpack_format`, `sparkompass receipt schema`, and `sparkompass receipt lint` report `ContextPackFormatV1` and `ContextPackFormatValidationV1` for portable receipt linting without source text
-- `sparkompass_task_outcome` and `sparkompass task run/record` report `TaskOutcomeReceiptV1` with exit-code gate, output oracle, output hash, and optional receipt verification
-- `sparkompass_task_outcome_ledger`, `sparkompass task run/record --ledger`, and `sparkompass task-ledger report` report `TaskOutcomeLedgerV1` with verified tasks, verification rate, review reasons, p95 duration, and tokens per verified task
+- `sparkompass_contextpack_format`, `sparkompass receipt schema`, and `sparkompass receipt lint` report `ContextPackFormatV1` and `ContextPackFormatValidationV1` for portable receipt linting without source text, including insensitive Oracle blockers
+- `sparkompass_task_outcome` and `sparkompass task run/record` report `TaskOutcomeReceiptV1` with exit-code gate, output oracle, output-oracle sensitivity, output hash, and optional receipt verification
+- `sparkompass_task_outcome_ledger`, `sparkompass task run/record --ledger`, and `sparkompass task-ledger report` report `TaskOutcomeLedgerV1` with verified tasks, verification rate, review reasons, output-oracle sensitivity failures, p95 duration, and tokens per verified task
 - `sparkompass_calibrate_context` uses `expectRegex` while searching for the smallest verified target
 - `sparkompass_shadow_compare` verifies a no-regression run against full context, supports `expectRegex`, and detects a fixture regression
 - semantic cache lookup returns a hit for matching adaptive policy, dependencies, tool fingerprint, oracle, and ContextPack expectations
@@ -231,13 +233,14 @@ npm pack --dry-run
 - `compress` output says that compression is heuristic and not official billing.
 - `--keep` examples exist for error codes and must-keep terms.
 - `pack --expect` and `pack --expect-regex` are documented as direct ContextPack quality gates.
+- `pack --target auto`, `pack --auto-target`, and MCP `autoTarget` are documented as ContextAutoTargetV1 calibration before packing, including profile-baseline measurement, explicit Oracle-Gate requirement, and `savings_gate`.
 - `pack --risk-profile` examples explain `compact`, `balanced`, `careful`, and `strict`.
 - `receipt verify` is documented as saved ContextPack receipt verification against original source and optional delivered context.
 - `receipt schema` and `receipt lint` are documented as the open ContextPackFormatV1 contract and source-free format validation.
 - `contextpack verify` is documented as ContextPackRegistryVerificationV1 for `context_pack_id` based lookup plus receipt/source verification.
-- `task run` and `task record` are documented as local TaskOutcomeReceipt generation for test, lint, build, or compiler checks.
-- `task-ledger` is documented as TaskOutcomeLedgerV1 history for verified/review tasks, verification rate, review reasons, p95 duration, and tokens per verified task.
-- `calibrate` is documented as the safe-target search for pack budgets including `--expect` and `--expect-regex`.
+- `task run` and `task record` are documented as local TaskOutcomeReceipt generation for test, lint, build, or compiler checks with output-oracle sensitivity.
+- `task-ledger` is documented as TaskOutcomeLedgerV1 history for verified/review tasks, verification rate, review reasons, output-oracle sensitivity failures, p95 duration, and tokens per verified task.
+- `calibrate` is documented as the safe-target search for pack budgets, with `verified-calibration` requiring explicit `--expect` or `--expect-regex`.
 - `ledger` is documented as delivered-token savings history, not theoretical compact-candidate savings.
 - `shadow` is documented as a concrete full-context comparison against exact facts and regex expectations.
 - `inventory`, `cache`, `delta`, and `lookup` commands are documented as Control-Plane building blocks.
@@ -248,8 +251,9 @@ npm pack --dry-run
 - `semantic-cache` is documented as adaptive verified reuse with optional ContextPackRegistry verification, not as a pure similarity cache.
 - `prompt-advisory` is documented as a CLI/MCP/Hook preflight, not as a Codex request rewriter.
 - `prompt-prepare` is documented as a conscious compact handoff builder, not as a Codex request rewriter.
+- `prompt-prepare --target auto`, `prompt-prepare --auto-target`, and MCP `autoTarget` are documented as ContextAutoTargetV1 calibration for sendable prompts, including the same explicit Oracle-Gate requirement.
 - `prompt-ledger` is documented as local sendable-prompt savings history, not as billing proof.
-- `pilot` is documented as a CLI/MCP ledger-writing measurement run, not as billing proof.
+- `pilot` is documented as a CLI/MCP ledger-writing measurement run with Auto-Target non-regression evidence, not as billing proof.
 - `impact` is documented as a read-only user-impact report over Savings, Handoff, PromptPreparation, and TaskOutcome ledgers, not as billing proof.
 - Plugin manifest includes `mcpServers` and the MCP config points at the bridge script.
 - Plugin hook config is documented as a non-blocking advisory, not as a Codex request rewriter.
@@ -260,26 +264,26 @@ npm pack --dry-run
 
 As of this checkpoint:
 
-- average saving: 41%
+- average saving: 36%
 - average anchor retention: 100%
 - worst-case anchor retention: 100%
 - critical anchor retention: 100%
 - source evidence coverage: 100%
-- Dogfood p95 delivered tokens: 15,796
+- Dogfood p95 delivered tokens: 7,033
 - expanded ContextPacks: 0
 - full-context fallbacks: 0
 - risky compressions: 0
-- tests: 227
+- tests: 277
 - test suites: 55
-- benchmark cases: 10
-- Failure-Corpus successes: 7/7
-- Failure-Corpus classes: 7/7
-- BenchmarkContextPackQualityV1 verified cases: 10/10
+- benchmark cases: 26
+- Failure-Corpus successes: 23/23
+- Failure-Corpus classes: 23/23
+- BenchmarkContextPackQualityV1 verified cases: 26/26
 - benchmark regressions: 0
-- benchmark counterfactuals detected: 42/42
-- benchmark TaskOutcome successes: 10/10
+- benchmark counterfactuals detected: 169/169
+- benchmark TaskOutcome successes: 26/26
 - BenchmarkEfficiencyMetricsV1: verified
-- benchmark total cost tokens per verified task: 120
+- benchmark total cost tokens per verified task: 133
 - benchmark task success delta: 0%
 - benchmark fallback/retrieval/cache-hit rate: 0% / 0% / 0%
 - scorecard gate: verified-scorecard
@@ -291,12 +295,15 @@ As of this checkpoint:
 - package dry-run gate: verified-package-dry-run
 - package install smoke gate: verified-package-install-smoke
 - plugin install smoke gate: verified-plugin-install-smoke
-- pilot PromptPreparationLedger: 1/1 verified
-- pilot context tokens per verified task: 1026
-- pilot start-context savings: 49%
-- pilot sendable prompt savings: 24%
-- impact sendable prompt savings: 24%
-- release-audit requirements: 30/30
+- pilot SavingsLedger: verified packs plus quality-gated positive saving packs
+- pilot HandoffLedger: 1/1 verified, 1 quality-gated positive saving handoff
+- pilot PromptPreparationLedger: 1/1 verified, 1 quality-gated positive saving preparation
+- pilot context tokens per verified task: 52
+- pilot start-context savings: 42%
+- pilot sendable prompt savings: 18%
+- impact sendable prompt savings: 18%
+- release-audit requirements: 31/31
+- release-audit GitHub release claims: verified-github-release-claims
 - release-audit ExperimentPlan: verified-experiment-plan, 12 planned runs
 - release-audit ExperimentScript: verified-experiment-script, 12 planned runs, executable
 - release-audit ExperimentEvidenceAudit: verified-experiment-evidence, 12/12 Usage, 12/12 TaskOutcomes
@@ -312,15 +319,16 @@ As of this checkpoint:
 - SemanticCacheRegistry gate: verified-semantic-cache-registry-contract
 - MCP tools: 48
 - DoctorOverhead gate: verified-doctor-overhead
-- DoctorOverhead standard profile: 20/48 MCP tools, about 11,716 estimated catalog tokens saved
-- package size: 601.3 kB
-- unpacked size: 2519.4 kB
-- package files: 107
-- benchmark average saving: 55%
-- benchmark tokens per successful case: 83
-- benchmark p95 saved tokens: 163
+- DoctorOverhead standard profile: 20/48 MCP tools, about 11,721 estimated catalog tokens saved
+- package size: 679.6 kB
+- unpacked size: 2869.8 kB
+- package files: 108
+- benchmark average saving: 52%
+- benchmark tokens per successful case: 96
+- benchmark p95 saved tokens: 141
 - AcceptanceOracleV1 exact/regex/counterfactual tests: passing
 - ContextPackAcceptanceOracleV1 CLI/MCP/fallback tests: passing
+- ContextAutoTargetV1 CLI/MCP/calibration/baseline-savings-gate tests: passing
 - ContextPackReceiptVerificationV1 CLI/MCP tests: passing
 - ContextPackFormatV1 CLI/MCP/lint tests: passing
 - ContextPackRegistryV1 and ContextPackRegistryVerificationV1 CLI/MCP/release-audit tests: passing
@@ -352,7 +360,7 @@ As of this checkpoint:
 - PluginInstallSmokeAuditV1 CLI/MCP/release-audit tests: passing
 - SparkompassReleaseAuditV1 CLI/MCP tests: passing
 - SparkompassUserPromptHookAdvisoryV1 CLI/MCP/plugin-hook tests: passing
-- SparkompassPromptPreparationV1 CLI/MCP/release-audit tests: passing
+- SparkompassPromptPreparationV1 CLI/MCP/auto-target/release-audit tests: passing
 - PromptPreparationLedgerV1 CLI/MCP/release-audit tests: passing
 - ContextEnvelopeV1, ContextEnvelopePrefixReuseV1, and ContextEnvelopeLedgerV1 CLI/MCP tests: passing
 - CodexOfficialUsageReceiptV1, CodexUsageInvariantsV1, reasoning sub-bucket, and CodexOfficialUsageComparisonV1 CLI tests: passing

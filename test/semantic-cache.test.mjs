@@ -76,6 +76,31 @@ describe("Verified semantic cache", () => {
     assert.ok(wrongExpectations.evaluated[0].verification.reasons.includes("context-expectations-mismatch"));
   });
 
+  it("rejects cache reuse when ContextPack oracle sensitivity fails", async () => {
+    const root = await makeSemanticCacheFixture();
+    await fs.writeFile(path.join(root, "src/alpha.mjs"), [
+      "export function alpha() {",
+      "  return \"DEBUG\";",
+      "}",
+      "// DEBUG repeated marker"
+    ].join("\n"));
+    await addSemanticCacheEntry(root, {
+      query: "alpha",
+      file: "src/alpha.mjs",
+      keep: ["alpha"],
+      expectRegex: ["DEBUG"],
+      targetPercent: 90
+    });
+
+    const lookup = await lookupSemanticCache(root, {
+      query: "alpha",
+      expectRegex: ["DEBUG"]
+    });
+
+    assert.equal(lookup.hit, false);
+    assert.ok(lookup.evaluated[0].verification.reasons.includes("acceptance-oracle-source-insensitive"));
+  });
+
   it("rejects reuse when a dependency file changes", async () => {
     const root = await makeSemanticCacheFixture();
     await addSemanticCacheEntry(root, {

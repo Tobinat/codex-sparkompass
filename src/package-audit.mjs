@@ -25,7 +25,7 @@ const REQUIRED_PACKAGE_PATHS = [
   "docs/evidence.md",
   "docs/usage.md",
   "docs/publishing.md",
-  "docs/releases/v0.1.0-alpha.0.md",
+  "docs/releases/v0.1.0-alpha.1.md",
   "evidence/case-studies/readme-ab-v1/README.md",
   "evidence/case-studies/readme-ab-v1/raw-usage.jsonl",
   "evidence/case-studies/readme-ab-v1/compact-usage.jsonl",

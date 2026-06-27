@@ -55,6 +55,25 @@ describe("ContextPackFormatV1", () => {
     assert.ok(validation.failures.some((failure) => failure.check === "source-hash-sha256"));
   });
 
+  it("flags receipts with insensitive acceptance oracles", () => {
+    const pack = buildContextPack([
+      "DEBUG first repeated marker.",
+      "DEBUG second repeated marker.",
+      "KEEP_ANCHOR remains."
+    ].join("\n"), {
+      keep: ["KEEP_ANCHOR"],
+      expectRegex: ["DEBUG"],
+      targetPercent: 90,
+      expansionTargets: []
+    });
+
+    const validation = validateContextPackFormat(pack);
+
+    assert.equal(validation.status, "context-pack-format-needs-review");
+    assert.equal(validation.verified, false);
+    assert.ok(validation.failures.some((failure) => failure.check === "acceptance-oracle-source-sensitivity"));
+  });
+
   it("CLI exposes schema and lints a receipt file", async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), "sparkompass-context-pack-format-"));
     const pack = buildContextPack("ERROR E_FORMAT_104\nDone when: safe.", {

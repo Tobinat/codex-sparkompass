@@ -192,6 +192,12 @@ export async function buildReleaseAudit(rootPath, options = {}) {
       promptPreparationLedger: pilot.ledger_paths.promptPreparation
     })
     : null;
+  const githubClaims = await buildGitHubReleaseClaimsProbe(root, {
+    scorecard,
+    gatePath,
+    pilot,
+    impactReport
+  });
   const requirements = buildRequirements({
     scorecard,
     inventory,
@@ -212,6 +218,7 @@ export async function buildReleaseAudit(rootPath, options = {}) {
     experimentProbe,
     gatePath,
     impactReport,
+    githubClaims,
     fallbackProbe,
     mcp,
     packageShape,
@@ -249,9 +256,15 @@ export async function buildReleaseAudit(rootPath, options = {}) {
       semantic_cache_tool_fingerprint_status: semanticCacheProbe.status,
       semantic_cache_registry_contract_status: semanticCacheProbe.registry_contract_status,
       prompt_preparation_status: promptPreparationProbe.status,
+      prompt_preparation_acceptance_oracle_sensitivity_success: promptPreparationProbe.acceptance_oracle_sensitivity_success,
       prompt_preparation_sendable_savings_percent: promptPreparationProbe.sendable_prompt_savings_percent,
       prompt_preparation_ledger_entries: promptPreparationProbe.ledger_entries,
+      prompt_preparation_quality_gated_saving_preparations: promptPreparationProbe.ledger_quality_gated_prompt_saving_preparations,
       prompt_preparation_ledger_savings_percent: promptPreparationProbe.ledger_sendable_savings_percent,
+      prompt_preparation_auto_target_status: promptPreparationProbe.auto_target_status,
+      prompt_preparation_auto_target_oracle_gate: promptPreparationProbe.auto_target_oracle_gate,
+      prompt_preparation_auto_target_savings_gate: promptPreparationProbe.auto_target_savings_gate,
+      prompt_preparation_auto_target_additional_saved_tokens: promptPreparationProbe.auto_target_additional_saved_tokens,
       experiment_plan_status: experimentPlanProbe.status,
       experiment_plan_runs: experimentPlanProbe.planned_runs,
       experiment_plan_repeat: experimentPlanProbe.repeat,
@@ -281,6 +294,9 @@ export async function buildReleaseAudit(rootPath, options = {}) {
       gate_path_current_gate: gatePath.current_gate,
       gate_path_next_gate: gatePath.next_gate,
       gate_path_end_to_end_status: gatePath.end_to_end.status,
+      github_release_claims_status: githubClaims.status,
+      github_release_claims_checked: githubClaims.summary.checked,
+      github_release_claims_failed: githubClaims.summary.failed,
       mcp_tools: mcp.tools.length,
       package_dry_run_status: packageDryRun.status,
       package_dry_run_size_kb: packageDryRun.package.size_kb,
@@ -303,6 +319,7 @@ export async function buildReleaseAudit(rootPath, options = {}) {
       benchmark_task_success_delta_percent: scorecard.metrics.benchmark.efficiency?.task_success_delta_percent || 0,
       pilot_context_tokens_per_verified_task: pilot?.metrics?.context_tokens_per_verified_task || 0,
       pilot_start_context_savings_percent: pilot?.metrics?.start_context_savings_percent || 0,
+      pilot_quality_gated_handoff_saving_handoffs: pilot?.metrics?.quality_gated_handoff_saving_handoffs || 0,
       pilot_sendable_prompt_savings_percent: pilot?.metrics?.sendable_prompt_savings_percent || 0,
       impact_status: impactReport?.gate?.status || "not-run",
       impact_combined_savings_percent: impactReport?.impact?.combined_savings_percent || 0,
@@ -327,6 +344,7 @@ export async function buildReleaseAudit(rootPath, options = {}) {
       experiment_probe: summarizeExperimentProbe(experimentProbe),
       gate_path: gatePath,
       impact_report: impactReport ? summarizeImpactReport(impactReport) : null,
+      github_release_claims: githubClaims,
       fallback_probe: fallbackProbe,
       mcp,
       package: packageShape,
@@ -366,13 +384,14 @@ Pfad: ${audit.root}
 - Source-Hash Contract: ${audit.metrics.source_hash_contract_status}
 - Semantic Cache Tool-Fingerprint: ${audit.metrics.semantic_cache_tool_fingerprint_status}
 - Semantic Cache Registry: ${audit.metrics.semantic_cache_registry_contract_status}
-- Prompt Preparation: ${audit.metrics.prompt_preparation_status}, sendbarer Prompt ${audit.metrics.prompt_preparation_sendable_savings_percent}% gespart, Ledger ${formatNumber(audit.metrics.prompt_preparation_ledger_entries)} Einträge
+- Prompt Preparation: ${audit.metrics.prompt_preparation_status}, sendbarer Prompt ${audit.metrics.prompt_preparation_sendable_savings_percent}% gespart, Auto-Target ${audit.metrics.prompt_preparation_auto_target_status}/${audit.metrics.prompt_preparation_auto_target_savings_gate}/${audit.metrics.prompt_preparation_auto_target_oracle_gate}, Ledger ${formatNumber(audit.metrics.prompt_preparation_ledger_entries)} Einträge (${formatNumber(audit.metrics.prompt_preparation_quality_gated_saving_preparations)} sparend)
 - Experiment Plan: ${audit.metrics.experiment_plan_status}, ${formatNumber(audit.metrics.experiment_plan_runs)} geplante Runs, Repeat ${formatNumber(audit.metrics.experiment_plan_repeat)}
 - Experiment Script: ${audit.metrics.experiment_script_status}, Codex-Runs ${formatNumber(audit.metrics.experiment_script_codex_runs)}, TaskOutcomes ${formatNumber(audit.metrics.experiment_script_task_outcomes)}, ausführbar ${audit.metrics.experiment_script_executable ? "ja" : "nein"}
 - Experiment Evidence Audit: ${audit.metrics.experiment_evidence_audit_status}, Usage ${formatNumber(audit.metrics.experiment_evidence_audit_usage_verified_runs)}/${formatNumber(audit.metrics.experiment_plan_runs)}, TaskOutcomes ${formatNumber(audit.metrics.experiment_evidence_audit_task_outcomes)}/${formatNumber(audit.metrics.experiment_plan_runs)}, Prompts ${formatNumber(audit.metrics.experiment_evidence_audit_prompt_hash_matches)}/${formatNumber(audit.metrics.experiment_plan_runs)}
 - Experiment Probe: ${audit.metrics.experiment_gate_status}, Router ${audit.metrics.experiment_router_mode}, Usage-Invarianten ${formatNumber(audit.metrics.experiment_usage_invariant_verified_runs)}/${formatNumber(audit.artifacts.experiment_probe.manifests)}, Metadaten ${formatNumber(audit.metrics.experiment_evidence_complete_runs)}/${formatNumber(audit.artifacts.experiment_probe.manifests)}, ContextPack-Hash ${formatNumber(audit.metrics.experiment_context_pack_hash_verified_runs)}/${formatNumber(audit.artifacts.experiment_probe.manifests)}, TaskOutcomes ${formatNumber(audit.metrics.experiment_verified_task_outcomes)}/${formatNumber(audit.metrics.experiment_task_outcomes)}, Effizienz ${audit.metrics.experiment_efficiency_status} (${formatNumber(audit.metrics.experiment_optimized_tokens_per_verified_task)} Tokens/verifiziertem Task)
 - Gate-Pfad: ${audit.metrics.gate_path_status}, aktuell ${audit.metrics.gate_path_current_gate}, nächstes Gate ${audit.metrics.gate_path_next_gate} (${audit.metrics.gate_path_end_to_end_status})
 - Impact Report: ${audit.metrics.impact_status}, kombiniert ${audit.metrics.impact_combined_savings_percent}% Ersparnis, sendbarer Prompt ${audit.metrics.impact_sendable_prompt_savings_percent}%
+- GitHub Claims: ${audit.metrics.github_release_claims_status}, ${formatNumber(audit.metrics.github_release_claims_checked - audit.metrics.github_release_claims_failed)}/${formatNumber(audit.metrics.github_release_claims_checked)} verifiziert
 - MCP-Tools: ${formatNumber(audit.metrics.mcp_tools)}
 - Package Dry Run: ${audit.metrics.package_dry_run_status}, ${audit.metrics.package_dry_run_size_kb} kB Package, ${audit.metrics.package_dry_run_unpacked_size_kb} kB entpackt, ${formatNumber(audit.metrics.package_dry_run_files)} Dateien
 - Package Install Smoke: ${audit.metrics.package_install_smoke_status}, MCP ${formatNumber(audit.metrics.package_install_smoke_mcp_tools)} Tools, Benchmark ${formatNumber(audit.metrics.package_install_smoke_benchmark_cases)} Fälle
@@ -402,7 +421,142 @@ ${audit.next_actions.map((action) => `- ${action}`).join("\n")}
 `.trim();
 }
 
-function buildRequirements({ scorecard, inventory, contextPlan, evidenceAudit, ablationAudit, slimmingPlan, contextPackFormat, contextPackFormatValidation, contextPackIdProbe, sourceHashProbe, sourceHashContract, semanticCacheProbe, promptPreparationProbe, experimentPlanProbe, experimentScriptProbe, experimentEvidenceAuditProbe, experimentProbe, gatePath, impactReport, fallbackProbe, mcp, packageShape, packageDryRun, packageInstallSmoke, pluginShape, pluginInstallSmoke, pilot }) {
+async function buildGitHubReleaseClaimsProbe(root, { scorecard, gatePath, pilot, impactReport }) {
+  const packageJson = await readJsonFile(path.join(root, "package.json"));
+  const version = packageJson?.version || "unknown";
+  const releaseNotesFile = `docs/releases/v${version}.md`;
+  const files = [
+    "README.md",
+    "docs/evidence.md",
+    releaseNotesFile,
+    "CHANGELOG.md",
+    "docs/publishing.md"
+  ];
+  const texts = {};
+  for (const file of files) {
+    texts[file] = await readTextFile(path.join(root, file));
+  }
+
+  const official = gatePath.official_usage_comparison || {};
+  const benchmark = scorecard.metrics.benchmark || {};
+  const failureCoverage = benchmark.failure_corpus_coverage || {};
+  const verifiedFailureClasses = failureCoverage.verified_classes?.length || 0;
+  const requiredFailureClasses = failureCoverage.required_classes?.length || 0;
+  const pilotStartSavings = Number(pilot?.metrics?.start_context_savings_percent) || 0;
+  const pilotPromptSavings = Number(pilot?.metrics?.sendable_prompt_savings_percent) || 0;
+  const impactPromptSavings = Number(impactReport?.impact?.sendable_prompt_savings_percent) || 0;
+
+  const claims = {
+    version,
+    total_tokens_saved: Number(official.total_tokens_saved) || 0,
+    total_savings_percent: Number(official.total_savings_percent) || 0,
+    uncached_input_tokens_saved: Number(official.uncached_input_tokens_saved) || 0,
+    uncached_input_savings_percent: Number(official.uncached_input_savings_percent) || 0,
+    benchmark_cases: Number(benchmark.cases) || 0,
+    benchmark_context_successes: Number(benchmark.context_successes) || 0,
+    benchmark_task_outcomes_verified: Number(benchmark.task_outcomes_verified) || 0,
+    benchmark_average_savings_percent: Number(benchmark.average_savings_percent) || 0,
+    benchmark_counterfactuals_detected: Number(benchmark.counterfactuals_detected) || 0,
+    benchmark_counterfactuals: Number(benchmark.counterfactuals) || 0,
+    failure_corpus_verified_classes: verifiedFailureClasses,
+    failure_corpus_required_classes: requiredFailureClasses,
+    pilot_start_context_savings_percent: pilotStartSavings,
+    pilot_sendable_prompt_savings_percent: pilotPromptSavings,
+    impact_sendable_prompt_savings_percent: impactPromptSavings
+  };
+
+  const checks = [];
+  const addTextCheck = (id, file, expected, label = expected) => {
+    const text = texts[file] || "";
+    checks.push({
+      id,
+      file,
+      expected: String(label),
+      status: text.includes(String(expected)) ? "verified" : "needs-review"
+    });
+  };
+  const addPairCheck = (id, file, left, right, label = `${left}/${right}`) => {
+    addTextCheck(id, file, `${left}/${right}`, label);
+  };
+  const addPercentCheck = (id, file, value, label = `${value}%`) => {
+    addTextCheck(id, file, `${value}%`, label);
+  };
+
+  for (const file of files) {
+    checks.push({
+      id: `file-present:${file}`,
+      file,
+      expected: "file exists and is readable",
+      status: texts[file] ? "verified" : "needs-review"
+    });
+  }
+
+  addTextCheck("readme-version", "README.md", `v${version}`);
+  addTextCheck("readme-total-saved", "README.md", formatNumber(claims.total_tokens_saved));
+  addPercentCheck("readme-total-saving-percent", "README.md", claims.total_savings_percent);
+  addTextCheck("readme-uncached-input-saved", "README.md", formatNumber(claims.uncached_input_tokens_saved));
+  addPercentCheck("readme-uncached-input-percent", "README.md", claims.uncached_input_savings_percent);
+  addPercentCheck("readme-benchmark-saving", "README.md", claims.benchmark_average_savings_percent);
+  addPercentCheck("readme-pilot-start-saving", "README.md", claims.pilot_start_context_savings_percent);
+  addPercentCheck("readme-pilot-prompt-saving", "README.md", claims.pilot_sendable_prompt_savings_percent);
+  addTextCheck("readme-non-rewrite-caveat", "README.md", "nicht heimlich verändert");
+
+  addTextCheck("evidence-total-saved", "docs/evidence.md", formatNumber(claims.total_tokens_saved));
+  addPercentCheck("evidence-total-saving-percent", "docs/evidence.md", claims.total_savings_percent);
+  addTextCheck("evidence-uncached-input-saved", "docs/evidence.md", formatNumber(claims.uncached_input_tokens_saved));
+  addPercentCheck("evidence-uncached-input-percent", "docs/evidence.md", claims.uncached_input_savings_percent);
+  addTextCheck("evidence-benchmark-cases", "docs/evidence.md", String(claims.benchmark_cases));
+  addPairCheck("evidence-failure-corpus-classes", "docs/evidence.md", claims.failure_corpus_verified_classes, claims.failure_corpus_required_classes);
+  addPairCheck("evidence-counterfactuals", "docs/evidence.md", claims.benchmark_counterfactuals_detected, claims.benchmark_counterfactuals);
+  addPercentCheck("evidence-benchmark-saving", "docs/evidence.md", claims.benchmark_average_savings_percent);
+  addPercentCheck("evidence-pilot-start-saving", "docs/evidence.md", claims.pilot_start_context_savings_percent);
+  addPercentCheck("evidence-pilot-prompt-saving", "docs/evidence.md", claims.pilot_sendable_prompt_savings_percent);
+
+  addTextCheck("release-notes-version", releaseNotesFile, `v${version}`);
+  addPairCheck("release-notes-benchmark-context", releaseNotesFile, claims.benchmark_context_successes, claims.benchmark_cases);
+  addPairCheck("release-notes-failure-corpus", releaseNotesFile, claims.failure_corpus_verified_classes, claims.failure_corpus_required_classes);
+  addPairCheck("release-notes-counterfactuals", releaseNotesFile, claims.benchmark_counterfactuals_detected, claims.benchmark_counterfactuals);
+  addPercentCheck("release-notes-benchmark-saving", releaseNotesFile, claims.benchmark_average_savings_percent);
+  addTextCheck("release-notes-total-saved", releaseNotesFile, formatNumber(claims.total_tokens_saved));
+  addPercentCheck("release-notes-total-saving-percent", releaseNotesFile, claims.total_savings_percent);
+  addTextCheck("release-notes-uncached-input-saved", releaseNotesFile, formatNumber(claims.uncached_input_tokens_saved));
+  addPercentCheck("release-notes-uncached-input-percent", releaseNotesFile, claims.uncached_input_savings_percent);
+  addTextCheck("release-notes-technical-preview", releaseNotesFile, "Technical Preview");
+  addTextCheck("release-notes-non-rewrite-caveat", releaseNotesFile, "Kein automatisches Umschreiben");
+
+  addTextCheck("changelog-version", "CHANGELOG.md", `v${version}`);
+  addTextCheck("changelog-web-security-class", "CHANGELOG.md", "web-security-header");
+  addTextCheck("changelog-total-saved", "CHANGELOG.md", formatNumber(claims.total_tokens_saved));
+  addTextCheck("changelog-uncached-input-saved", "CHANGELOG.md", formatNumber(claims.uncached_input_tokens_saved));
+  addPercentCheck("changelog-benchmark-saving", "CHANGELOG.md", claims.benchmark_average_savings_percent);
+
+  addTextCheck("publishing-tag-version", "docs/publishing.md", `v${version}`);
+  addTextCheck("publishing-tarball-version", "docs/publishing.md", `codex-sparkompass-${version}.tgz`);
+  addTextCheck("publishing-notes-file", "docs/publishing.md", releaseNotesFile);
+
+  const failedChecks = checks.filter((check) => check.status !== "verified");
+  return {
+    schema: "SparkompassGitHubReleaseClaimsAuditV1",
+    status: failedChecks.length ? "github-release-claims-needs-review" : "verified-github-release-claims",
+    verified: failedChecks.length === 0,
+    version,
+    files_checked: files,
+    claims,
+    summary: {
+      checked: checks.length,
+      verified: checks.length - failedChecks.length,
+      failed: failedChecks.length
+    },
+    checks,
+    failures: failedChecks.map((check) => ({
+      id: check.id,
+      file: check.file,
+      expected: check.expected
+    }))
+  };
+}
+
+function buildRequirements({ scorecard, inventory, contextPlan, evidenceAudit, ablationAudit, slimmingPlan, contextPackFormat, contextPackFormatValidation, contextPackIdProbe, sourceHashProbe, sourceHashContract, semanticCacheProbe, promptPreparationProbe, experimentPlanProbe, experimentScriptProbe, experimentEvidenceAuditProbe, experimentProbe, gatePath, impactReport, githubClaims, fallbackProbe, mcp, packageShape, packageDryRun, packageInstallSmoke, pluginShape, pluginInstallSmoke, pilot }) {
   const benchmarkQuality = scorecard.metrics.benchmark.context_pack_quality;
   const failureCoverage = scorecard.metrics.benchmark.failure_corpus_coverage;
   return [
@@ -487,13 +641,22 @@ function buildRequirements({ scorecard, inventory, contextPlan, evidenceAudit, a
       label: "Nutzerwirkung aus Ledgers als Gate sichtbar",
       passed: Boolean(impactReport?.gate?.verified)
         && impactReport.schema === "SparkompassImpactReportV1"
+        && Number(impactReport.quality.verified_packs) > 0
+        && Number(impactReport.quality.quality_gated_pack_saving_entries) > 0
         && Number(impactReport.quality.verified_tasks) > 0
         && Number(impactReport.quality.verified_prompt_preparations) > 0
+        && Number(impactReport.quality.quality_gated_prompt_saving_preparations) > 0
         && Number(impactReport.impact.combined_saved_tokens) > 0
-        && Number(impactReport.impact.sendable_prompt_saved_tokens) > 0,
+        && Number(impactReport.impact.verified_sendable_prompt_saved_tokens) > 0,
       evidence: impactReport
-        ? `impact=${impactReport.gate.status}, combined=${impactReport.impact.combined_savings_percent}%, sendable_prompt=${impactReport.impact.sendable_prompt_savings_percent}%, prompts=${impactReport.quality.verified_prompt_preparations}, tasks=${impactReport.quality.verified_tasks}`
+        ? `impact=${impactReport.gate.status}, combined=${impactReport.impact.combined_savings_percent}%, sendable_prompt=${impactReport.impact.sendable_prompt_savings_percent}%, verified_sendable_prompt=${impactReport.impact.verified_sendable_prompt_savings_percent}%, packs=${impactReport.quality.verified_packs}/${impactReport.quality.quality_gated_pack_saving_entries} sparend, prompts=${impactReport.quality.verified_prompt_preparations}/${impactReport.quality.quality_gated_prompt_saving_preparations} sparend, tasks=${impactReport.quality.verified_tasks}`
         : "impact skipped"
+    }),
+    requirement({
+      id: "github-release-claims",
+      label: "GitHub-README und Release-Claims stimmen mit aktueller Evidenz",
+      passed: githubClaims.verified,
+      evidence: `claims=${githubClaims.status}, checked=${githubClaims.summary.checked}, failed=${githubClaims.summary.failed}, files=${githubClaims.files_checked.join(",")}`
     }),
     requirement({
       id: "critical-anchors-100",
@@ -563,9 +726,13 @@ function buildRequirements({ scorecard, inventory, contextPlan, evidenceAudit, a
       passed: promptPreparationProbe.verified
         && promptPreparationProbe.status === "verified-prompt-preparation"
         && promptPreparationProbe.ledger_status === "verified-prompt-preparation-ledger"
+        && Number(promptPreparationProbe.ledger_quality_gated_prompt_saving_preparations) > 0
+        && promptPreparationProbe.auto_target_status === "verified-auto-target"
+        && promptPreparationProbe.auto_target_oracle_gate === "verified-oracle"
+        && promptPreparationProbe.auto_target_savings_gate === "verified-additional-saving"
         && mcp.tools.includes("sparkompass_prepare_prompt")
         && mcp.tools.includes("sparkompass_prompt_preparation_ledger"),
-      evidence: `prompt=${promptPreparationProbe.status}, ledger=${promptPreparationProbe.ledger_status}, context_pack=${promptPreparationProbe.context_pack_id}, sendable_savings=${promptPreparationProbe.sendable_prompt_savings_percent}%`
+      evidence: `prompt=${promptPreparationProbe.status}, ledger=${promptPreparationProbe.ledger_status}, sparend=${promptPreparationProbe.ledger_quality_gated_prompt_saving_preparations}, auto_target=${promptPreparationProbe.auto_target_status}/${promptPreparationProbe.auto_target_savings_gate}/${promptPreparationProbe.auto_target_oracle_gate}, context_pack=${promptPreparationProbe.context_pack_id}, sendable_savings=${promptPreparationProbe.sendable_prompt_savings_percent}%`
     }),
     requirement({
       id: "official-usage-experiment-plan",
@@ -636,10 +803,20 @@ function buildRequirements({ scorecard, inventory, contextPlan, evidenceAudit, a
       label: "Tokens pro verifiziertem Task über Ledger messbar",
       passed: Boolean(pilot?.gate?.verified)
         && Number(pilot?.metrics?.verified_tasks) > 0
+        && Number(pilot?.metrics?.verified_savings_entries) > 0
+        && Number(pilot?.metrics?.quality_gated_saving_entries) > 0
+        && Number(pilot?.metrics?.quality_gated_delivered_saved_tokens) > 0
+        && Number(pilot?.metrics?.verified_handoffs) > 0
+        && Number(pilot?.metrics?.quality_gated_handoff_saving_handoffs) > 0
+        && Number(pilot?.metrics?.quality_gated_start_context_saved_tokens) > 0
         && Number(pilot?.metrics?.verified_prompt_preparations) > 0
-        && Number(pilot?.metrics?.context_tokens_per_verified_task) > 0,
+        && Number(pilot?.metrics?.quality_gated_prompt_saving_preparations) > 0
+        && Number(pilot?.metrics?.verified_sendable_prompt_saved_tokens) > 0
+        && Number(pilot?.metrics?.context_tokens_per_verified_task) > 0
+        && pilot?.metrics?.prompt_preparation_auto_target_status === "verified-auto-target"
+        && pilot?.metrics?.prompt_preparation_auto_target_oracle_gate === "verified-oracle",
       evidence: pilot
-        ? `pilot=${pilot.gate.status}, tasks=${pilot.metrics.verified_tasks}, prompts=${pilot.metrics.verified_prompt_preparations}, context_tokens_per_task=${pilot.metrics.context_tokens_per_verified_task}`
+        ? `pilot=${pilot.gate.status}, tasks=${pilot.metrics.verified_tasks}, packs=${pilot.metrics.verified_savings_entries}/${pilot.metrics.quality_gated_saving_entries} sparend, handoffs=${pilot.metrics.verified_handoffs}/${pilot.metrics.quality_gated_handoff_saving_handoffs} sparend, prompts=${pilot.metrics.verified_prompt_preparations}/${pilot.metrics.quality_gated_prompt_saving_preparations} sparend, context_tokens_per_task=${pilot.metrics.context_tokens_per_verified_task}, auto_target=${pilot.metrics.prompt_preparation_auto_target_status}/${pilot.metrics.prompt_preparation_auto_target_savings_gate}/${pilot.metrics.prompt_preparation_auto_target_oracle_gate}, auto_target_extra=${pilot.metrics.auto_target_additional_saved_tokens}`
         : "pilot skipped"
     }),
     requirement({
@@ -838,6 +1015,7 @@ async function buildPromptPreparationProbe() {
   const preparation = buildPromptPreparation(source, {
     label: "release-audit-prompt-preparation.txt",
     goal: "Auth-Reset reparieren",
+    autoTarget: true,
     keep: ["AUTH_RESET_TOKEN_EXPIRED"],
     expect: ["AUTH_RESET_TOKEN_EXPIRED"]
   });
@@ -850,11 +1028,18 @@ async function buildPromptPreparationProbe() {
   });
   const verified = preparation.gate.verified
     && preparation.context_pack.acceptance_oracle_success
+    && preparation.context_pack.acceptance_oracle_sensitivity_success
     && preparation.context_pack.critical_anchors.retention_percent === 100
     && preparation.sendable_prompt.text.includes("AUTH_RESET_TOKEN_EXPIRED")
     && !preparation.sendable_prompt.text.includes("Hintergrundnotiz 79")
+    && preparation.context_pack.auto_target?.status === "verified-auto-target"
+    && preparation.context_pack.auto_target?.oracle_gate === "verified-oracle"
+    && preparation.context_pack.auto_target?.savings_gate === "verified-additional-saving"
     && ledger.totals.entries === 1
     && ledger.totals.verified_preparations === 1
+    && ledger.totals.quality_gated_prompt_saving_preparations === 1
+    && ledger.totals.verified_auto_target_entries === 1
+    && ledger.totals.verified_auto_target_oracle_entries === 1
     && ledger.totals.sendable_prompt_saved_tokens > 0;
 
   return {
@@ -867,14 +1052,24 @@ async function buildPromptPreparationProbe() {
     delivered_context_savings_percent: preparation.savings.delivered_context.percent,
     sendable_prompt_savings_percent: preparation.savings.sendable_prompt.percent,
     sendable_prompt_tokens: preparation.sendable_prompt.estimated_tokens,
+    auto_target_status: preparation.context_pack.auto_target?.status || "not-used",
+    auto_target_oracle_gate: preparation.context_pack.auto_target?.oracle_gate || "not-used",
+    auto_target_savings_gate: preparation.context_pack.auto_target?.savings_gate || "not-used",
+    auto_target_baseline_target_percent: preparation.context_pack.auto_target?.baseline_target_percent || null,
+    auto_target_selected_target_percent: preparation.context_pack.auto_target?.selected_target_percent || null,
+    auto_target_additional_saved_tokens: preparation.context_pack.auto_target?.additional_saved_tokens_vs_baseline || 0,
     ledger_status: verified ? "verified-prompt-preparation-ledger" : "prompt-preparation-ledger-needs-review",
     ledger_entries: ledger.totals.entries,
     ledger_verified_preparations: ledger.totals.verified_preparations,
+    ledger_quality_gated_prompt_saving_preparations: ledger.totals.quality_gated_prompt_saving_preparations,
+    ledger_verified_auto_target_entries: ledger.totals.verified_auto_target_entries,
+    ledger_verified_auto_target_oracle_entries: ledger.totals.verified_auto_target_oracle_entries,
     ledger_sendable_savings_percent: ledger.totals.sendable_prompt_savings_percent,
     ledger_path: ledgerWrite.path,
     critical_anchor_retention_percent: preparation.context_pack.critical_anchors.retention_percent,
     source_evidence_coverage_percent: preparation.context_pack.source_evidence_coverage_percent,
-    acceptance_oracle_success: preparation.context_pack.acceptance_oracle_success
+    acceptance_oracle_success: preparation.context_pack.acceptance_oracle_success,
+    acceptance_oracle_sensitivity_success: preparation.context_pack.acceptance_oracle_sensitivity_success
   };
 }
 
@@ -1170,6 +1365,7 @@ async function buildGatePathProbe(root, probes = {}) {
       evidence_file: path.relative(root, evidenceFile),
       total_tokens_saved: officialComparisonVerified ? 8417 : 0,
       total_savings_percent: officialComparisonVerified ? 21 : 0,
+      uncached_input_tokens_saved: officialComparisonVerified ? 16051 : 0,
       uncached_input_savings_percent: officialComparisonVerified ? 42 : 0,
       token_formula: "input_tokens + output_tokens"
     },
@@ -1613,6 +1809,18 @@ async function readOptional(file) {
     return await fs.readFile(file, "utf8");
   } catch {
     return "";
+  }
+}
+
+async function readTextFile(file) {
+  return readOptional(file);
+}
+
+async function readJsonFile(file) {
+  try {
+    return JSON.parse(await fs.readFile(file, "utf8"));
+  } catch {
+    return null;
   }
 }
 

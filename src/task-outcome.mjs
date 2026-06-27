@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { buildAcceptanceOracle, evaluateAcceptanceOracle } from "./acceptance-oracle.mjs";
+import { buildAcceptanceOracle, buildCounterfactualChecks, evaluateAcceptanceOracle } from "./acceptance-oracle.mjs";
 import { buildReceiptVerification, loadReceiptOrPackJson } from "./receipt-verifier.mjs";
 import { estimateTextStats, formatNumber } from "./token-estimator.mjs";
 import { summarizeToolOutput } from "./tool-output.mjs";
@@ -74,6 +74,7 @@ export async function buildTaskOutcomeReceipt(options = {}) {
   ];
   const outputOracle = buildAcceptanceOracle(outputExpectations);
   const outputOracleResult = evaluateAcceptanceOracle(combinedOutput, outputOracle);
+  const outputOracleSensitivity = buildOutputOracleSensitivity(combinedOutput, outputOracle);
   const receiptVerification = await maybeVerifyReceipt(options);
   const summary = summarizeToolOutput(combinedOutput, {
     label: options.label || "task-output",
@@ -82,15 +83,18 @@ export async function buildTaskOutcomeReceipt(options = {}) {
   });
   const taskSucceeded = !options.timedOut && expectedExitCode === exitCode;
   const outputOracleSucceeded = outputOracle.expectations.length ? outputOracleResult.success : true;
+  const outputOracleSensitive = outputOracle.expectations.length ? outputOracleSensitivity.success : true;
   const receiptSucceeded = receiptVerification ? receiptVerification.verified : true;
   const reasons = buildGateReasons({
     taskSucceeded,
     outputOracleSucceeded,
+    outputOracleSensitive,
     receiptSucceeded,
     timedOut: Boolean(options.timedOut),
     expectedExitCode,
     exitCode,
     outputOracleResult,
+    outputOracleSensitivity,
     receiptVerification
   });
 
@@ -117,7 +121,8 @@ export async function buildTaskOutcomeReceipt(options = {}) {
     output_oracle: {
       enabled: outputOracle.expectations.length > 0,
       oracle: outputOracle,
-      result: outputOracleResult
+      result: outputOracleResult,
+      sensitivity: outputOracleSensitivity
     },
     output_summary: summary,
     context_pack: receiptVerification
@@ -132,6 +137,7 @@ export async function buildTaskOutcomeReceipt(options = {}) {
       requirements: {
         command_exit_success: taskSucceeded,
         output_oracle_success: outputOracleSucceeded,
+        output_oracle_sensitivity_success: outputOracleSensitive,
         receipt_verification_success: receiptSucceeded
       },
       reasons
@@ -142,6 +148,7 @@ export async function buildTaskOutcomeReceipt(options = {}) {
 export function formatTaskOutcomeReport(receipt) {
   const outputOracle = receipt.output_oracle;
   const receiptVerification = receipt.context_pack?.receipt_verification;
+  const outputOracleLine = formatOutputOracleLine(outputOracle);
 
   return `
 # TaskOutcomeReceiptV1
@@ -155,7 +162,7 @@ Status: ${receipt.gate.status}
 - Timeout: ${receipt.result.timed_out ? "ja" : "nein"}
 - Output-Hash: ${receipt.result.combined.hash}
 - Output-Tokens: ${formatNumber(receipt.result.combined.estimated_tokens)}
-- Output-Orakel: ${outputOracle.enabled ? `${outputOracle.result.matched_count}/${outputOracle.result.total}` : "nicht gesetzt"}
+- Output-Orakel: ${outputOracleLine}
 - ContextPack: ${receipt.context_pack?.context_pack_id || "nicht verknüpft"}
 - Receipt-Verifikation: ${receiptVerification ? receiptVerification.status : "nicht gesetzt"}
 
@@ -212,10 +219,42 @@ function buildGateReasons(input) {
   if (!input.outputOracleSucceeded) {
     reasons.push(`output-oracle-missing:${input.outputOracleResult.missing.join(",")}`);
   }
+  if (input.outputOracleSucceeded && !input.outputOracleSensitive) {
+    reasons.push(`output-oracle-insensitive:${input.outputOracleSensitivity.missed.join(",")}`);
+  }
   if (!input.receiptSucceeded) {
     reasons.push(`receipt-verification-failed:${input.receiptVerification.status}`);
   }
   return reasons;
+}
+
+function buildOutputOracleSensitivity(text, outputOracle) {
+  const checks = buildCounterfactualChecks(text, outputOracle);
+  const missedChecks = checks.filter((check) => !check.detected);
+
+  return {
+    schema: "TaskOutputOracleSensitivityV1",
+    success: missedChecks.length === 0,
+    total: checks.length,
+    detected_count: checks.length - missedChecks.length,
+    missed: missedChecks.map((check) => check.label),
+    missed_details: missedChecks,
+    checks
+  };
+}
+
+function formatOutputOracleLine(outputOracle = {}) {
+  if (!outputOracle.enabled) return "nicht gesetzt";
+  const result = outputOracle.result || {};
+  const sensitivity = outputOracle.sensitivity || {};
+  const base = `${formatNumber(result.matched_count)}/${formatNumber(result.total)}`;
+  if (!result.success) {
+    return `${base}, fehlt: ${(result.missing || []).join(", ")}`;
+  }
+  if (sensitivity.success === false) {
+    return `${base}, nicht sensitiv: ${(sensitivity.missed || []).join(", ")}`;
+  }
+  return `${base}, sensitiv`;
 }
 
 function executeCommand(command, options = {}) {

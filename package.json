@@ -1,6 +1,6 @@
 {
   "name": "codex-sparkompass",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.1",
   "description": "Deutschsprachige Context-Control-Plane für sparsamere, belegbare Codex-Workflows.",
   "type": "module",
   "files": [

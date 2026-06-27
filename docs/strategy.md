@@ -16,8 +16,8 @@ Token sparen heißt nicht: weniger denken. Token sparen heißt: Kontext so präz
 4. `compress`: lange Logs, Notizen oder Fehlermeldungen vor dem Einfügen in Codex heuristisch verdichten.
 5. `pack`: verifizierte ContextPacks mit kritischen Ankern, Quellbelegen, Receipt und Fallback erzeugen.
 6. `receipt schema/lint/verify` und `contextpack register/verify`: den offenen ContextPack-Receipt-Vertrag ausgeben, gespeicherte Receipts ohne Originalquelle linten, mit Originalquelle hashgenau nachprüfen und registrierte Packs per `context_pack_id` erneut verifizieren.
-7. `task run/record`: lokale Test-, Lint- oder Build-Ergebnisse als TaskOutcomeReceipt mit Output-Hash, Exit-Code und optionaler Receipt-Verifikation belegen.
-8. `task-ledger`: TaskOutcomeReceipts über mehrere Läufe sammeln und Verifikationsrate, Review-Gründe, p95-Dauer sowie Output-/Kontexttokens pro verifiziertem Task berichten.
+7. `task run/record`: lokale Test-, Lint- oder Build-Ergebnisse als TaskOutcomeReceipt mit Output-Hash, Exit-Code, sensitivem Output-Orakel und optionaler Receipt-Verifikation belegen.
+8. `task-ledger`: TaskOutcomeReceipts über mehrere Läufe sammeln und Verifikationsrate, Review-Gründe, Output-Orakel-Sensitivität, p95-Dauer sowie Output-/Kontexttokens pro verifiziertem Task berichten.
 9. `codex-usage`: dokumentierte `codex exec --json`-Usage-Events als CodexOfficialUsageReceipt lesen und in einem CodexOfficialUsageLedger sammeln.
 10. `experiment plan`/`experiment script`/`experiment audit`/`experiment run`/`router decide`: echte vierarmige Codex-JSONL-Messläufe reproduzierbar vorbereiten, als ausführbares Runbook materialisieren, geplante Artefakte gegen den Plan prüfen, offizielle Usage-Belege und optionale TaskOutcome-Receipts zu RunManifests verbinden und daraus Kompressionsgewinn, Plugin-Grundlast, Netto-Produktgewinn, Integrationseffekt sowie `bypass`, `compact`, `lazy` oder `full` ableiten.
 11. `plan`: Sofortkontext, Nachlade-Belege und ausgelassene Einheiten unter Budget trennen, optional delta-bewusst gegen einen Cache, graph-bewusst für direkte Abhängigkeiten, optimiert nach Nutzen pro Token und bei `strict`/`careful` risk-aware gegated.
@@ -27,7 +27,7 @@ Token sparen heißt nicht: weniger denken. Token sparen heißt: Kontext so präz
 15. `ablation-audit`: Sofortkontext-Einheiten einzeln entfernen und gegen ein Akzeptanz-Orakel als kritisch oder On-Demand-Kandidat markieren.
 16. `slim`: aus ablation-sicheren Sofortkontext-Einheiten einen konservativen On-Demand-Vorschlag mit Zusatzersparnis bauen, während oracle-kritische und ungeprüfte Einheiten sofort sichtbar bleiben.
 17. `handoff`: Startprompt, Sparbalken, Readiness-Gates, Prompt-Cache-Layout und MCP-Nachladevertrag als ContextHandoffReceipt sichtbar machen.
-18. `handoff-ledger`: Handoff-Receipts über mehrere Codex-Starts sammeln und geschätzte Startkontext-Ersparnis berichten.
+18. `handoff-ledger`: Handoff-Receipts über mehrere Codex-Starts sammeln und geschätzte sowie qualitätsgegatede positive Startkontext-Ersparnis berichten.
 19. `envelope`: einen ContextPlan als stabilen Prefix, variable Tail und On-Demand-Index für cache-freundliche Übergaben strukturieren.
 20. `envelope-ledger`: Prefix-Wiederverwendung über mehrere ContextEnvelope-Läufe sammeln und berichten.
 21. `inventory`: semantische Einheiten aus Code, Logs, Markdown und Konfiguration sichtbar machen.
@@ -63,8 +63,8 @@ Token sparen heißt nicht: weniger denken. Token sparen heißt: Kontext so präz
 - ContextPackFormat: Der Receipt-Vertrag ist als offenes Schema und Lint-Gate verfügbar, damit CI, MCP und spätere Codex-Integration Packs prüfen können, ohne Rohtext mitzuschicken.
 - Receipt-Verifikation: Ein gespeichertes Receipt kann später gegen Originalquelle, Quellbelege und gelieferten Kontext nachgewiesen oder verworfen werden.
 - ContextPackRegistry: Ein Pack kann lokal mit Receipt, Quellpfad und geliefertem Kontext registriert werden, damit Codex später mit `prüfeKontext(context_pack_id)` dieselbe Hash-Verifikation wieder auslösen kann.
-- TaskOutcomeReceipt: Lokale Checks wie Tests, Linter oder Builds bekommen Exit-Code, Output-Hash, Output-Orakel und optional eine verknüpfte Receipt-Prüfung.
-- TaskOutcomeLedger: Aus einzelnen Check-Belegen entsteht eine Verlaufsspur für verifizierte Tasks, review-pflichtige Tasks, Review-Gründe, Verifikationsrate und Tokens pro verifiziertem Task.
+- TaskOutcomeReceipt: Lokale Checks wie Tests, Linter oder Builds bekommen Exit-Code, Output-Hash, Output-Orakel, Sensitivitätsprüfung und optional eine verknüpfte Receipt-Prüfung.
+- TaskOutcomeLedger: Aus einzelnen Check-Belegen entsteht eine Verlaufsspur für verifizierte Tasks, review-pflichtige Tasks, Review-Gründe, Output-Orakel-Sensitivität, Verifikationsrate und Tokens pro verifiziertem Task.
 - CodexOfficialUsageReceipt: Ein echter Codex-JSONL-Lauf bekommt einen eigenen Beleg mit offiziellen `turn.completed.usage`-Tokenfeldern, Rohdaten-Hash und CodexUsageInvariants.
 - CodexOfficialUsageLedger: Offizielle Codex-Laufwerte können über mehrere Runs summiert werden, ohne lokale Schätzungen als Abrechnung auszugeben.
 - ExperimentPlan: Die echte Vierarm-Messung bekommt vorab einen Ablaufvertrag mit Prompt-Hashes, geplanten JSONL-Pfaden, TaskOutcome-Dateien, vollständigen Metadaten und Auswertungsbefehlen.
@@ -85,7 +85,7 @@ Token sparen heißt nicht: weniger denken. Token sparen heißt: Kontext so präz
 - ContextAblationAudit: Vor weiterer Verkleinerung wird geprüft, welche Sofortkontext-Einheiten ein Oracle wirklich tragen.
 - ContextSlimmingPlan: Aus ablation-sicheren Einheiten entsteht ein Review-Vorschlag für On-Demand-Evidence, ohne oracle-kritische oder ungeprüfte Einheiten aus dem Sofortkontext zu nehmen.
 - ContextHandoffReceipt: Der geplante Startprompt bekommt einen sichtbaren Sparbalken, Qualitätsvertrag, Handoff-Hashes und MCP-Nachladevertrag per Unit-ID und `source_hash`.
-- ContextHandoffLedger: Die Handoff-Sparbalken werden über mehrere Codex-Starts summiert, inklusive Gate-Status und Nachlade-Evidence.
+- ContextHandoffLedger: Die Handoff-Sparbalken werden über mehrere Codex-Starts summiert, inklusive Gate-Status, Nachlade-Evidence und der Trennung zwischen verifiziert sicher und wirklich sparend.
 - ContextEnvelope: Der geplante Kontext wird in wiederverwendbare Prefix-Segmente, variable Task-Daten und einen Nachlade-Index getrennt; vorherige Envelopes können per Hash verglichen werden, damit Prefix-Stabilität über Turns sichtbar wird.
 - ContextEnvelopeLedger: Prefix-Stabilität wird über mehrere Agenten-Turns messbar, inklusive voller Wiederverwendung, statischem Fallback und invalidierten Prefix-Tokens.
 - MCP-Nachladen: Codex kann erst suchen und dann nur die benötigte Originalstelle laden.
@@ -97,10 +97,10 @@ Token sparen heißt nicht: weniger denken. Token sparen heißt: Kontext so präz
 - Verifizierter semantischer Cache: Ähnlichkeit findet Kandidaten, aber nur Belege, Abhängigkeiten, Tool-Fingerprint, optionaler ContextPack-ID-Registry-Vertrag und Orakel geben frei.
 - Gegenfaktische Entfernungstests: Das System prüft, ob seine eigenen Benchmark-Orakel wichtige Verluste wirklich bemerken.
 - Worst-Case-Gate: Der schlechteste Einzelfall und p95-Tokenwerte werden sichtbar, damit ein guter Durchschnitt keine gefährliche Verdichtung verdeckt.
-- Failure-Corpus: Negationen, Zahlen, Prioritäten, Stacktraces, gleichnamige Symbole, Sicherheits-Datenfluss, dynamische Imports und Monorepo-Abhängigkeiten werden als wiederholbare Benchmark-Fälle gegen Kompressionsverlust getestet.
+- Failure-Corpus: Negationen, Zahlen, Prioritäten, Stacktraces, gleichnamige Symbole, Sicherheits-Datenfluss, dynamische Imports, Monorepo-Abhängigkeiten, Env-/URL-/Permission-Werte, numerische Grenzen mit Einheiten, boolesche Policy-/Moduswerte, Diff-Polarität, Reihenfolge/Praezedenz, Zeitfenster/Ablaufzeiten, API-/Schema-Verträge, Datenbank-/Migrationsverträge, Idempotenz-/Nebenlaeufigkeitsverträge, Locale-/Encoding-/Normalisierungsverträge, Auth-/Scope-/Rollenverträge, Crypto-/Signatur-/Hashverträge, Geld-/Währungs-/Rundungsverträge, destruktive Operationen, Regex-/Glob-/Matcher-Verträge sowie Web-Security-Header-/Cookie-Verträge werden als wiederholbare Benchmark-Fälle gegen Kompressionsverlust getestet.
 - ContextPolicy: `compact`, `balanced`, `careful` und `strict` machen das Risiko eines Pack- oder Plan-Laufs explizit und reproduzierbar.
 - ContextCalibration: Sparkompass sucht die sichere Kompressionsgrenze, statt Prozentwerte zu erraten.
-- SavingsLedger: Der Sparbalken wird zur Verlaufsmessung, die Fallbacks und echte gelieferte Tokens berücksichtigt.
+- SavingsLedger: Der Sparbalken wird zur Verlaufsmessung, die Fallbacks, sicher verifizierte Packs, echte gelieferte Tokens und qualitätsgegatede positive Pack-Ersparnis getrennt ausweist.
 - SparkompassPilotRun: Ein Eigenlauf schreibt mehrere Ledger-Spuren gleichzeitig und macht Tokens pro verifiziertem Task, sendbare Prompt-Ersparnis, echte gelieferte Ersparnis, Prefix-Stabilität und Startkontext-Ersparnis zusammen sichtbar.
 - SparkompassImpactReport: Pack-, Handoff-, PromptPreparation- und TaskOutcome-Ledgers werden zu einem Nutzerwirkungs-Gate mit kombinierten Sparbalken, p95-Werten und Qualitätsblockern.
 - SparkompassScorecard: Dogfood, Benchmark, TaskOutcome, PromptPreparation und Ledger-Warnungen werden zu einem einzigen Freigabesignal.
@@ -134,19 +134,19 @@ Token sparen heißt nicht: weniger denken. Token sparen heißt: Kontext so präz
 - ContextAblationAuditV1 für planbezogene Gegenfakten-Tests gegen ein Akzeptanz-Orakel
 - ContextSlimmingPlanV1 für ablation-getriebene On-Demand-Vorschläge bei erhaltener Oracle-Qualität
 - ContextHandoffReceiptV1 für sichtbare Startprompt-Ersparnis, Qualitätsvertrag und MCP-Nachladevertrag
-- ContextHandoffLedgerV1 für geschätzte Startkontext-Ersparnis über mehrere Codex-Handoffs
+- ContextHandoffLedgerV1 für geschätzte und qualitätsgegatede positive Startkontext-Ersparnis über mehrere Codex-Handoffs
 - ContextEnvelopeV1 für cache-freundliche Übergabereihenfolge mit Prefix-/Tail-Hashes und Prefix-Reuse-Vergleich
 - ContextEnvelopeLedgerV1 für mehrturnfähige Prefix-Reuse-Messung
 - SparkompassPromptPreparationV1 für sendbare kompakte Prompts mit ContextPack-Gate und Sparbalken
 - PromptPreparationLedgerV1 für Verlaufsmessung vorbereiteter sendbarer Prompts
 - ToolOutputSummaryV1 und ToolOutputEvidenceV1 für lange Logs und Tool-Ausgaben mit Rohdaten-Hash und gezieltem Nachladen
 - ContextCalibrationV1 für sichere Zielgrößen
-- SavingsLedgerV1 für echte gelieferte Ersparnis
+- SavingsLedgerV1 für echte gelieferte Ersparnis, sicher verifizierte Packs und qualitätsgegatede positive ContextPack-Ersparnis
 - ContextPackReceiptVerificationV1 für nachtraegliche Receipt-Prüfung
 - ContextPackFormatV1 für offenen Receipt-Vertrag und portables Linting
 - ContextPackRegistryV1 und ContextPackRegistryVerificationV1 für ID-basierte ContextPack-Prüfung
-- TaskOutcomeReceiptV1 für lokale Check-Ergebnisse mit Output-Orakel
-- TaskOutcomeLedgerV1 für Verifikationsrate, Review-Gründe und Tokens pro verifiziertem Task über mehrere echte Checks
+- TaskOutcomeReceiptV1 für lokale Check-Ergebnisse mit sensitivem Output-Orakel
+- TaskOutcomeLedgerV1 für Verifikationsrate, Review-Gründe, Output-Orakel-Sensitivität und Tokens pro verifiziertem Task über mehrere echte Checks
 - SparkompassUserPromptHookAdvisoryV1 für nicht-blockierende CLI-/MCP-/Hook-Hinweise vor großen User-Prompts
 - SparkompassPilotRunV1 für reproduzierbare Eigenläufe mit Savings-, PromptPreparation-, TaskOutcome-, Envelope- und Handoff-Ledgern
 - SparkompassImpactReportV1 für qualitätsgegatede Nutzerwirkung aus Pack-, Handoff-, PromptPreparation- und TaskOutcome-Ledgers

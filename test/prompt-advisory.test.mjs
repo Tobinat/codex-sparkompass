@@ -87,6 +87,29 @@ describe("SparkompassUserPromptHookAdvisoryV1", () => {
     assert.match(report, /Sendbarer Codex-Prompt/);
   });
 
+  it("auto-calibrates prompt preparation before building the sendable prompt", () => {
+    const prompt = buildLargePrompt();
+    const preparation = buildPromptPreparation(prompt, {
+      goal: "Auth-Reset reparieren",
+      autoTarget: true,
+      keep: ["AUTH_RESET_TOKEN_EXPIRED"],
+      expect: ["AUTH_RESET_TOKEN_EXPIRED"]
+    });
+    const report = formatPromptPreparation(preparation);
+
+    assert.equal(preparation.gate.verified, true);
+    assert.equal(preparation.context_pack.auto_target.status, "verified-auto-target");
+    assert.equal(preparation.context_pack.auto_target.oracle_gate, "verified-oracle");
+    assert.equal(preparation.context_pack.auto_target.selected_target_percent, 10);
+    assert.equal(preparation.context_pack.auto_target.savings_gate, "verified-additional-saving");
+    assert.equal(preparation.context_pack.auto_target.selected_not_more_tokens_than_baseline, true);
+    assert.ok(preparation.context_pack.auto_target.additional_saved_tokens_vs_baseline > 0);
+    assert.equal(preparation.context_pack.critical_anchors.retention_percent, 100);
+    assert.equal(preparation.context_pack.acceptance_oracle_success, true);
+    assert.ok(preparation.savings.sendable_prompt.percent > 0);
+    assert.match(report, /Auto-Target: verified-auto-target/);
+  });
+
   it("CLI prompt-prepare emits JSON for hook payloads", () => {
     const payload = JSON.stringify({
       messages: [
@@ -112,6 +135,34 @@ describe("SparkompassUserPromptHookAdvisoryV1", () => {
     assert.equal(preparation.gate.verified, true);
     assert.match(preparation.sendable_prompt.text, /AUTH_RESET_TOKEN_EXPIRED/);
     assert.doesNotMatch(preparation.sendable_prompt.text, /Hintergrundnotiz 79/);
+  });
+
+  it("CLI prompt-prepare supports auto-target calibration", () => {
+    const result = spawnSync(process.execPath, [
+      "./bin/codex-sparkompass.mjs",
+      "prompt-prepare",
+      "--text",
+      buildLargePrompt(),
+      "--target",
+      "auto",
+      "--expect",
+      "AUTH_RESET_TOKEN_EXPIRED",
+      "--keep",
+      "AUTH_RESET_TOKEN_EXPIRED",
+      "--json"
+    ], {
+      encoding: "utf8"
+    });
+
+    assert.equal(result.status, 0, result.stderr);
+    const preparation = JSON.parse(result.stdout);
+    assert.equal(preparation.schema, "SparkompassPromptPreparationV1");
+    assert.equal(preparation.gate.verified, true);
+    assert.equal(preparation.context_pack.auto_target.status, "verified-auto-target");
+    assert.equal(preparation.context_pack.auto_target.oracle_gate, "verified-oracle");
+    assert.equal(preparation.context_pack.auto_target.selected_target_percent, 10);
+    assert.equal(preparation.context_pack.auto_target.savings_gate, "verified-additional-saving");
+    assert.ok(preparation.savings.sendable_prompt.percent > 0);
   });
 });
 

@@ -9,7 +9,7 @@ describe("codex-sparkompass plugin", () => {
     const marketplace = JSON.parse(fs.readFileSync(".agents/plugins/marketplace.json", "utf8"));
 
     assert.equal(manifest.name, "codex-sparkompass");
-    assert.equal(manifest.version, "0.1.0-alpha.0");
+    assert.equal(manifest.version, "0.1.0-alpha.1");
     assert.equal(manifest.skills, "./skills/");
     assert.equal(manifest.mcpServers, "./.mcp.json");
     assert.equal(manifest.interface.displayName, "Codex Sparkompass");

@@ -40,6 +40,21 @@ describe("AcceptanceOracleV1", () => {
     assert.ok(counterfactuals.some((item) => item.type === "regex" && item.present));
   });
 
+  it("reports insensitive regex expectations when another match hides removal", () => {
+    const oracle = buildAcceptanceOracle([
+      "regex:/DEBUG/"
+    ]);
+    const counterfactuals = buildCounterfactualChecks(
+      "DEBUG first\nDEBUG second",
+      oracle
+    );
+
+    assert.equal(counterfactuals.length, 1);
+    assert.equal(counterfactuals[0].present, true);
+    assert.equal(counterfactuals[0].detected, false);
+    assert.equal(counterfactuals[0].reason, "oracle-missed-removal");
+  });
+
   it("reports invalid regex expectations as failed checks", () => {
     const oracle = buildAcceptanceOracle([
       {

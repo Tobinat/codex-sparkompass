@@ -5,6 +5,15 @@ import { calculateSavings, formatSavingsBar } from "./savings.mjs";
 import { formatNumber } from "./token-estimator.mjs";
 
 export const DEFAULT_SAVINGS_LEDGER_PATH = ".sparkompass/savings-ledger.json";
+const QUALITY_VERIFIED_GATE_STATUSES = new Set([
+  "verified-publishable",
+  "verified-expanded-context",
+  "fallback-full-context"
+]);
+const QUALITY_GATED_SAVINGS_GATE_STATUSES = new Set([
+  "verified-publishable",
+  "verified-expanded-context"
+]);
 
 export async function appendReceiptToLedger(rootPath, receiptInput, options = {}) {
   const root = path.resolve(rootPath || ".");
@@ -71,14 +80,33 @@ export function summarizeSavingsLedger(entries = []) {
   const compactTokens = sum(entries, "compact_tokens");
   const deliveredSavings = calculateSavings(originalTokens, deliveredTokens);
   const compactSavings = calculateSavings(originalTokens, compactTokens);
-  const verifiedEntries = entries.filter((entry) => entry.gate_status === "verified-publishable").length;
+  const verifiedEntriesList = entries.filter(isQualityVerifiedSavingsEntry);
+  const qualityGatedSavingEntriesList = entries.filter(isQualityGatedSavingsEntry);
+  const verifiedOriginalTokens = sum(verifiedEntriesList, "original_tokens");
+  const verifiedDeliveredTokens = sum(verifiedEntriesList, "delivered_tokens");
+  const verifiedDeliveredSavings = calculateSavings(verifiedOriginalTokens, verifiedDeliveredTokens);
+  const verifiedEntries = verifiedEntriesList.length;
+  const qualityGatedOriginalTokens = sum(qualityGatedSavingEntriesList, "original_tokens");
+  const qualityGatedDeliveredTokens = sum(qualityGatedSavingEntriesList, "delivered_tokens");
+  const qualityGatedDeliveredSavings = calculateSavings(qualityGatedOriginalTokens, qualityGatedDeliveredTokens);
   const expandedContexts = entries.filter((entry) => entry.fallback_mode === "expanded-context").length;
   const fullContextFallbacks = entries.filter((entry) => entry.fallback_mode === "full-context").length;
   const fallbackCount = entries.filter((entry) => entry.fallback_used).length;
+  const autoTargetEntries = entries.filter((entry) => entry.auto_target_enabled).length;
+  const verifiedAutoTargetEntries = entries.filter((entry) => (
+    entry.auto_target_status === "verified-auto-target"
+      && entry.auto_target_oracle_gate === "verified-oracle"
+      && entry.auto_target_savings_gate === "verified-additional-saving"
+  )).length;
+  const verifiedAutoTargetOracleEntries = entries.filter((entry) => (
+    entry.auto_target_oracle_gate === "verified-oracle"
+  )).length;
 
   return {
     entries: entries.length,
     verified_entries: verifiedEntries,
+    quality_gated_saving_entries: qualityGatedSavingEntriesList.length,
+    needs_review_entries: entries.length - verifiedEntries,
     original_tokens: originalTokens,
     compact_tokens: compactTokens,
     delivered_tokens: deliveredTokens,
@@ -86,6 +114,14 @@ export function summarizeSavingsLedger(entries = []) {
     compact_savings_percent: compactSavings.percent,
     delivered_saved_tokens: deliveredSavings.savedTokens,
     delivered_savings_percent: deliveredSavings.percent,
+    verified_original_tokens: verifiedOriginalTokens,
+    verified_delivered_tokens: verifiedDeliveredTokens,
+    verified_delivered_saved_tokens: verifiedDeliveredSavings.savedTokens,
+    verified_delivered_savings_percent: verifiedDeliveredSavings.percent,
+    quality_gated_original_tokens: qualityGatedOriginalTokens,
+    quality_gated_delivered_tokens: qualityGatedDeliveredTokens,
+    quality_gated_delivered_saved_tokens: qualityGatedDeliveredSavings.savedTokens,
+    quality_gated_delivered_savings_percent: qualityGatedDeliveredSavings.percent,
     p95_delivered_tokens: percentile(entries.map((entry) => entry.delivered_tokens), 95),
     p95_saved_tokens: percentile(entries.map((entry) => entry.delivered_saved_tokens), 95),
     minimum_critical_anchor_retention_percent: minimum(entries.map((entry) => entry.critical_anchor_retention_percent), 100),
@@ -94,7 +130,13 @@ export function summarizeSavingsLedger(entries = []) {
     fallback_rate_percent: entries.length ? Math.round((fallbackCount / entries.length) * 100) : 0,
     expanded_contexts: expandedContexts,
     full_context_fallbacks: fullContextFallbacks,
-    risky_compressions: entries.filter((entry) => entry.quality_status === "riskant").length
+    risky_compressions: entries.filter((entry) => entry.quality_status === "riskant").length,
+    auto_target_entries: autoTargetEntries,
+    verified_auto_target_entries: verifiedAutoTargetEntries,
+    verified_auto_target_oracle_entries: verifiedAutoTargetOracleEntries,
+    auto_target_additional_saved_tokens: sum(entries, "auto_target_additional_saved_tokens"),
+    auto_target_savings_gate_failures: autoTargetEntries - verifiedAutoTargetEntries,
+    auto_target_oracle_gate_failures: autoTargetEntries - verifiedAutoTargetOracleEntries
   };
 }
 
@@ -111,11 +153,25 @@ Pfad: ${ledger.path || "nicht gespeichert"}
 
 - Einträge: ${formatNumber(totals.entries)}
 - Verifizierte Packs: ${formatNumber(totals.verified_entries)}
+- Qualitätsgegatede sparende Packs: ${formatNumber(totals.quality_gated_saving_entries)}
+- Review-pflichtige Packs: ${formatNumber(totals.needs_review_entries)}
 - Echte Ersparnis: ${formatSavingsBar({
     originalTokens: totals.original_tokens,
     compactTokens: totals.delivered_tokens,
     savedTokens: totals.delivered_saved_tokens,
     percent: totals.delivered_savings_percent
+  })}
+- Verifizierte gelieferte Ersparnis: ${formatSavingsBar({
+    originalTokens: totals.verified_original_tokens,
+    compactTokens: totals.verified_delivered_tokens,
+    savedTokens: totals.verified_delivered_saved_tokens,
+    percent: totals.verified_delivered_savings_percent
+  })}
+- Qualitätsgegatede positive Ersparnis: ${formatSavingsBar({
+    originalTokens: totals.quality_gated_original_tokens,
+    compactTokens: totals.quality_gated_delivered_tokens,
+    savedTokens: totals.quality_gated_delivered_saved_tokens,
+    percent: totals.quality_gated_delivered_savings_percent
   })}
 - Kompakt-Kandidaten: ${formatSavingsBar({
     originalTokens: totals.original_tokens,
@@ -131,6 +187,7 @@ Pfad: ${ledger.path || "nicht gespeichert"}
 - Erweiterte ContextPacks: ${formatNumber(totals.expanded_contexts)}
 - Vollkontext-Fallbacks: ${formatNumber(totals.full_context_fallbacks)}
 - Riskante Verdichtungen: ${formatNumber(totals.risky_compressions)}
+- Auto-Target: ${formatNumber(totals.verified_auto_target_entries)}/${formatNumber(totals.auto_target_entries)} verifiziert, Oracle ${formatNumber(totals.verified_auto_target_oracle_entries)}/${formatNumber(totals.auto_target_entries)}, zusätzlich ca. ${formatNumber(totals.auto_target_additional_saved_tokens)} Tokens
 
 ## Letzte Einträge
 
@@ -148,6 +205,7 @@ function receiptToLedgerEntry(receipt, options = {}) {
     percent: Number(receipt.compact_ersparnis_prozent) || 0
   };
   const sourceCoveragePercent = Math.round(Number(receipt.source_evidence?.coverage ?? 0) * 100);
+  const autoTarget = receipt.context_selection?.auto_target || {};
   const entrySeed = [
     receipt.context_pack_id,
     receipt.created_at,
@@ -180,6 +238,20 @@ function receiptToLedgerEntry(receipt, options = {}) {
     delivered_savings_percent: Number(deliveredSavings.percent) || 0,
     critical_anchor_retention_percent: Number(receipt.critical_anchors?.retention_percent) || 0,
     source_evidence_coverage_percent: sourceCoveragePercent,
+    acceptance_oracle_success: receipt.acceptance_oracle?.enabled
+      ? Boolean(receipt.acceptance_oracle?.delivered?.success)
+      : null,
+    acceptance_oracle_sensitivity_success: receipt.acceptance_oracle?.enabled
+      ? Boolean(receipt.acceptance_oracle?.sensitivity?.delivered?.success)
+      : null,
+    auto_target_enabled: Boolean(autoTarget.enabled),
+    auto_target_status: autoTarget.status || "not-used",
+    auto_target_oracle_gate: autoTarget.oracle_gate || "not-used",
+    auto_target_explicit_oracle_present: Boolean(autoTarget.explicit_oracle_present),
+    auto_target_savings_gate: autoTarget.savings_gate || "not-used",
+    auto_target_baseline_target_percent: Number(autoTarget.baseline_target_percent) || 0,
+    auto_target_selected_target_percent: Number(autoTarget.selected_target_percent) || 0,
+    auto_target_additional_saved_tokens: Number(autoTarget.additional_saved_tokens_vs_baseline) || 0,
     receipt_hash: `sha256:${sha256(JSON.stringify(receipt))}`
   };
 }
@@ -217,6 +289,29 @@ function toDeliveredSavings(entry) {
     savedTokens: entry.delivered_saved_tokens,
     percent: entry.delivered_savings_percent
   };
+}
+
+function isQualityGatedSavingsEntry(entry) {
+  return isQualityVerifiedSavingsEntry(entry)
+    && QUALITY_GATED_SAVINGS_GATE_STATUSES.has(entry.gate_status)
+    && hasPositiveDeliveredSavings(entry);
+}
+
+function isQualityVerifiedSavingsEntry(entry) {
+  return QUALITY_VERIFIED_GATE_STATUSES.has(entry?.gate_status)
+    && entry?.quality_status !== "riskant"
+    && Number(entry?.critical_anchor_retention_percent) >= 100
+    && Number(entry?.source_evidence_coverage_percent) >= 100;
+}
+
+function hasPositiveDeliveredSavings(entry) {
+  const originalTokens = Number(entry?.original_tokens);
+  const deliveredTokens = Number(entry?.delivered_tokens);
+  const savedTokens = Number(entry?.delivered_saved_tokens);
+
+  if (!Number.isFinite(originalTokens) || originalTokens <= 0) return false;
+  if (Number.isFinite(deliveredTokens) && deliveredTokens >= 0 && deliveredTokens < originalTokens) return true;
+  return Number.isFinite(savedTokens) && savedTokens > 0;
 }
 
 function sum(entries, field) {

@@ -58,6 +58,30 @@ describe("ContextPackReceiptVerificationV1", () => {
     assert.equal(verification.checks.source_evidence.status, "failed");
   });
 
+  it("detects receipts whose acceptance oracle is not sensitive enough", () => {
+    const source = [
+      "DEBUG first repeated marker.",
+      "DEBUG second repeated marker.",
+      "KEEP_ANCHOR remains."
+    ].join("\n");
+    const pack = buildContextPack(source, {
+      label: "broad-oracle.log",
+      targetPercent: 90,
+      expansionTargets: [],
+      keep: ["KEEP_ANCHOR"],
+      expectRegex: ["DEBUG"]
+    });
+
+    const verification = buildReceiptVerification(pack.receipt, {
+      sourceText: source,
+      deliveredText: pack.context.text
+    });
+
+    assert.equal(verification.status, "receipt-needs-review");
+    assert.equal(verification.verified, false);
+    assert.ok(verification.failures.some((failure) => failure.check === "acceptance-oracle-source-sensitivity"));
+  });
+
   it("CLI receipt verify accepts a pack JSON and original file", async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), "sparkompass-receipt-verify-"));
     const source = [

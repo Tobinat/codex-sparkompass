@@ -12,7 +12,23 @@ const REQUIRED_FAILURE_CORPUS_CLASSES = [
   { id: "same-symbols", label: "Gleichnamige Symbole" },
   { id: "security-dataflow", label: "Sicherheits-Datenfluss" },
   { id: "dynamic-import", label: "Dynamischer Import" },
-  { id: "monorepo-dependency", label: "Monorepo-Abhängigkeit" }
+  { id: "monorepo-dependency", label: "Monorepo-Abhängigkeit" },
+  { id: "environment-url-permission", label: "Umgebung, URL und Berechtigung" },
+  { id: "numeric-budget-unit", label: "Numerische Grenzen und Einheiten" },
+  { id: "boolean-policy-mode", label: "Boolesche Policy- und Moduswerte" },
+  { id: "diff-polarity", label: "Diff-Polarität und Hunk-Kontext" },
+  { id: "precedence-order", label: "Reihenfolge und Präzedenz" },
+  { id: "temporal-window", label: "Zeitfenster und Ablaufzeiten" },
+  { id: "api-contract", label: "API-Vertrag und Schema" },
+  { id: "data-migration-contract", label: "Datenbank-Migration und Constraints" },
+  { id: "idempotency-concurrency", label: "Idempotenz und Nebenlaeufigkeit" },
+  { id: "locale-encoding", label: "Locale, Encoding und Normalisierung" },
+  { id: "auth-scope-contract", label: "Auth Scope und Rollenvertrag" },
+  { id: "crypto-signature-contract", label: "Crypto Signature und Hashvertrag" },
+  { id: "money-currency-contract", label: "Money Currency und Rundung" },
+  { id: "destructive-operation", label: "Destruktive Operationen" },
+  { id: "pattern-contract", label: "Regex Glob und Matcher" },
+  { id: "web-security-header", label: "Web Security Header und Cookies" }
 ];
 
 const BENCHMARK_CASES = [
@@ -426,6 +442,959 @@ Die Monorepo-Notiz listet alte Paketnamen.`,
         type: "regex",
         pattern: "packages\\/api depends on packages\\/shared-config",
         label: "api package dependency stays attached to shared config"
+      }
+    ]
+  },
+  {
+    id: "failure-environment-url-permission",
+    category: "failure-corpus",
+    failureClass: "environment-url-permission",
+    file: "test/fixtures/failure-corpus/environment-url-permission.md",
+    mode: "markdown",
+    source: `# Failure Corpus: Umgebung, URL und Berechtigung
+
+## Muss exakt bleiben
+
+- DATABASE_URL=https://db.internal.example/v2?sslmode=require
+- SPARKOMPASS_TOKEN_FILE=.secrets/sparkompass-token
+- chmod 0600 .secrets/sparkompass-token
+- Webhook endpoint: https://hooks.example.com/codex/sparkompass
+- Do not paste SPARKOMPASS_TOKEN into Codex.
+
+## Warum das kritisch ist
+
+Die Datenbank-URL enthält das benötigte SSL-Flag.
+Die Token-Datei darf nur lokal gelesen werden und muss mit 0600 geschützt bleiben.
+Der Webhook-Endpunkt ist der einzige erlaubte ausgehende Zielpfad.
+Der Rohwert aus SPARKOMPASS_TOKEN darf nie in einen Prompt kopiert werden.
+
+## Rauschen
+
+Die Betriebsnotiz wiederholt allgemeine Deployment-Hinweise.
+Die Betriebsnotiz wiederholt allgemeine Deployment-Hinweise.
+Die Betriebsnotiz wiederholt allgemeine Deployment-Hinweise.
+Die Betriebsnotiz wiederholt allgemeine Deployment-Hinweise.
+Die Betriebsnotiz wiederholt allgemeine Deployment-Hinweise.`,
+    keep: [
+      "DATABASE_URL=https://db.internal.example/v2?sslmode=require",
+      "SPARKOMPASS_TOKEN_FILE=.secrets/sparkompass-token",
+      "chmod 0600 .secrets/sparkompass-token",
+      "https://hooks.example.com/codex/sparkompass",
+      "Do not paste SPARKOMPASS_TOKEN into Codex"
+    ],
+    expect: [
+      "DATABASE_URL=https://db.internal.example/v2?sslmode=require",
+      "SPARKOMPASS_TOKEN_FILE=.secrets/sparkompass-token",
+      "chmod 0600 .secrets/sparkompass-token",
+      "Webhook endpoint: https://hooks.example.com/codex/sparkompass",
+      "Do not paste SPARKOMPASS_TOKEN into Codex.",
+      {
+        type: "regex",
+        pattern: "chmod\\s+0600\\s+\\.secrets\\/sparkompass-token",
+        label: "token file permissions remain exact"
+      }
+    ]
+  },
+  {
+    id: "failure-numeric-budget-unit",
+    category: "failure-corpus",
+    failureClass: "numeric-budget-unit",
+    file: "test/fixtures/failure-corpus/numeric-budget-unit.md",
+    mode: "markdown",
+    source: `# Failure Corpus: Numerische Grenzen und Einheiten
+
+## Muss exakt bleiben
+
+- p95_latency <= 250ms
+- max_memory=512MiB
+- retry_budget=0
+- rate_limit=120/min
+- rollout_percent=5%
+
+## Warum das kritisch ist
+
+Die Latenzgrenze ist ein Release-Blocker.
+Das Speicherlimit verhindert instabile Container-Neustarts.
+Das Retry-Budget null verhindert doppelte Schreiboperationen.
+Das Rate-Limit schützt den internen Codex-Usage-Sampler.
+Der Rollout bleibt bei 5%, bis echte TaskOutcome-Belege vorliegen.
+
+## Rauschen
+
+Der Betriebsbericht enthält allgemeine Hinweise zum Monitoring.
+Der Betriebsbericht enthält allgemeine Hinweise zum Monitoring.
+Der Betriebsbericht enthält allgemeine Hinweise zum Monitoring.
+Der Betriebsbericht enthält allgemeine Hinweise zum Monitoring.
+Der Betriebsbericht enthält allgemeine Hinweise zum Monitoring.`,
+    keep: [
+      "p95_latency <= 250ms",
+      "max_memory=512MiB",
+      "retry_budget=0",
+      "rate_limit=120/min",
+      "rollout_percent=5%"
+    ],
+    expect: [
+      "p95_latency <= 250ms",
+      "max_memory=512MiB",
+      "retry_budget=0",
+      "rate_limit=120/min",
+      "rollout_percent=5%",
+      {
+        type: "regex",
+        pattern: "p95_latency\\s*<=\\s*250ms",
+        label: "latency limit remains exact"
+      },
+      {
+        type: "regex",
+        pattern: "rate_limit=120\\/min",
+        label: "rate limit unit remains exact"
+      }
+    ]
+  },
+  {
+    id: "failure-boolean-policy-mode",
+    category: "failure-corpus",
+    failureClass: "boolean-policy-mode",
+    file: "test/fixtures/failure-corpus/boolean-policy-mode.md",
+    mode: "markdown",
+    source: `# Failure Corpus: Boolesche Policy- und Moduswerte
+
+## Muss exakt bleiben
+
+- allow_production_writes=false
+- delete_users=false
+- mode=read-only
+- policy=deny-by-default
+- migration_required=true
+
+## Warum das kritisch ist
+
+Produktionsschreibzugriffe bleiben aus.
+User-Loeschungen duerfen nicht aktiviert werden.
+Der Modus bleibt read-only, bis der Handoff belegt ist.
+Deny-by-default verhindert stille Freigaben.
+Die Migration ist weiterhin Pflicht, bevor der Task als erledigt gilt.
+
+## Rauschen
+
+Die Betriebsnotiz erklaert allgemeine Reviewablaeufe.
+Die Betriebsnotiz erklaert allgemeine Reviewablaeufe.
+Die Betriebsnotiz erklaert allgemeine Reviewablaeufe.
+Die Betriebsnotiz erklaert allgemeine Reviewablaeufe.
+Die Betriebsnotiz erklaert allgemeine Reviewablaeufe.`,
+    keep: [
+      "allow_production_writes=false",
+      "delete_users=false",
+      "mode=read-only",
+      "policy=deny-by-default",
+      "migration_required=true"
+    ],
+    expect: [
+      "allow_production_writes=false",
+      "delete_users=false",
+      "mode=read-only",
+      "policy=deny-by-default",
+      "migration_required=true",
+      {
+        type: "regex",
+        pattern: "allow_production_writes=false",
+        label: "production writes stay disabled"
+      },
+      {
+        type: "regex",
+        pattern: "policy=deny-by-default",
+        label: "policy remains deny by default"
+      }
+    ]
+  },
+  {
+    id: "failure-diff-polarity",
+    category: "failure-corpus",
+    failureClass: "diff-polarity",
+    file: "test/fixtures/failure-corpus/diff-polarity.patch",
+    mode: "diff",
+    source: `diff --git a/src/auth/guard.ts b/src/auth/guard.ts
+index 3b8e9a1..7c4d2f0 100644
+--- a/src/auth/guard.ts
++++ b/src/auth/guard.ts
+@@ -12,9 +12,9 @@ export function guardPolicy() {
+-  allow_admin=true
++  allow_admin=false
+-  delete_users=true
++  delete_users=false
+-  mode=full
++  mode=read-only
+   audit_required=true
+}
+
+# Noise
+The patch note repeats general review guidance.
+The patch note repeats general review guidance.
+The patch note repeats general review guidance.
+The patch note repeats general review guidance.
+The patch note repeats general review guidance.`,
+    keep: [
+      "@@ -12,9 +12,9 @@",
+      "-  allow_admin=true",
+      "+  allow_admin=false",
+      "-  delete_users=true",
+      "+  delete_users=false",
+      "+  mode=read-only"
+    ],
+    expect: [
+      "diff --git a/src/auth/guard.ts b/src/auth/guard.ts",
+      "@@ -12,9 +12,9 @@",
+      "-  allow_admin=true",
+      "+  allow_admin=false",
+      "-  delete_users=true",
+      "+  delete_users=false",
+      "-  mode=full",
+      "+  mode=read-only",
+      {
+        type: "regex",
+        pattern: "\\+\\s+allow_admin=false",
+        label: "admin access is disabled by the added line"
+      },
+      {
+        type: "regex",
+        pattern: "-\\s+delete_users=true",
+        label: "old destructive delete flag is visibly removed"
+      }
+    ]
+  },
+  {
+    id: "failure-precedence-order",
+    category: "failure-corpus",
+    failureClass: "precedence-order",
+    file: "test/fixtures/failure-corpus/precedence-order.md",
+    mode: "markdown",
+    source: `# Failure Corpus: Reihenfolge und Praezedenz
+
+## Muss exakt bleiben
+
+- precedence: env > repo config > default
+- fallback order: cache -> database -> remote API
+- Must hash rawAuthorization before writing session_token_hash.
+- Run schema migration before enabling FEATURE_BILLING_V2.
+- First validate tenant, then load ./providers/\${tenant}.mjs.
+
+## Warum das kritisch ist
+
+Die Reihenfolge entscheidet, ob ein Agent die sichere Quelle waehlt oder eine Default-Konfiguration zu frueh nutzt.
+Der Fallback darf die Remote API nur erreichen, wenn Cache und Datenbank keine Antwort liefern.
+Der rohe Authorization-Wert darf nie geschrieben werden, bevor der Hash gebildet ist.
+Die Billing-Funktion darf erst nach der Migration aktiv werden.
+Der Tenant muss validiert sein, bevor ein dynamischer Provider geladen wird.
+
+## Rauschen
+
+Die Architektur-Notiz wiederholt allgemeine Integrationsdetails.
+Die Architektur-Notiz wiederholt allgemeine Integrationsdetails.
+Die Architektur-Notiz wiederholt allgemeine Integrationsdetails.
+Die Architektur-Notiz wiederholt allgemeine Integrationsdetails.
+Die Architektur-Notiz wiederholt allgemeine Integrationsdetails.`,
+    keep: [
+      "precedence: env > repo config > default",
+      "fallback order: cache -> database -> remote API",
+      "Must hash rawAuthorization before writing session_token_hash",
+      "Run schema migration before enabling FEATURE_BILLING_V2",
+      "First validate tenant, then load ./providers/${tenant}.mjs"
+    ],
+    expect: [
+      "precedence: env > repo config > default",
+      "fallback order: cache -> database -> remote API",
+      "Must hash rawAuthorization before writing session_token_hash.",
+      "Run schema migration before enabling FEATURE_BILLING_V2.",
+      "First validate tenant, then load ./providers/${tenant}.mjs.",
+      {
+        type: "regex",
+        pattern: "precedence:\\s+env\\s*>\\s*repo config\\s*>\\s*default",
+        label: "configuration precedence remains exact"
+      },
+      {
+        type: "regex",
+        pattern: "hash rawAuthorization before writing session_token_hash",
+        label: "hashing stays before token persistence"
+      },
+      {
+        type: "regex",
+        pattern: "First validate tenant, then load \\.\\/providers\\/\\$\\{tenant\\}\\.mjs",
+        label: "tenant validation stays before dynamic provider load"
+      }
+    ]
+  },
+  {
+    id: "failure-temporal-window",
+    category: "failure-corpus",
+    failureClass: "temporal-window",
+    file: "test/fixtures/failure-corpus/temporal-window.md",
+    mode: "markdown",
+    source: `# Failure Corpus: Zeitfenster und Ablaufzeiten
+
+## Muss exakt bleiben
+
+- deploy_window=2026-07-01T02:00:00+02:00..2026-07-01T03:00:00+02:00
+- not_before=2026-07-01T02:00:00+02:00
+- expires_at=2026-07-01T03:00:00+02:00
+- cron: "15 2 * * 1-5" Europe/Berlin
+- ttl=15m
+
+## Warum das kritisch ist
+
+Das Deploy darf nicht vor dem Not-before-Zeitpunkt starten.
+Das Ablaufdatum begrenzt den Rollout hart.
+Die Cron-Zeile ist absichtlich in Europe/Berlin, nicht UTC.
+Die TTL von 15 Minuten verhindert alte Freigaben.
+Ein falscher Zeitraum kann denselben Code zur falschen Zeit ausführen.
+
+## Rauschen
+
+Die Release-Notiz wiederholt allgemeine Kalenderhinweise.
+Die Release-Notiz wiederholt allgemeine Kalenderhinweise.
+Die Release-Notiz wiederholt allgemeine Kalenderhinweise.
+Die Release-Notiz wiederholt allgemeine Kalenderhinweise.
+Die Release-Notiz wiederholt allgemeine Kalenderhinweise.`,
+    keep: [
+      "deploy_window=2026-07-01T02:00:00+02:00..2026-07-01T03:00:00+02:00",
+      "not_before=2026-07-01T02:00:00+02:00",
+      "expires_at=2026-07-01T03:00:00+02:00",
+      "cron: \"15 2 * * 1-5\" Europe/Berlin",
+      "ttl=15m"
+    ],
+    expect: [
+      "deploy_window=2026-07-01T02:00:00+02:00..2026-07-01T03:00:00+02:00",
+      "not_before=2026-07-01T02:00:00+02:00",
+      "expires_at=2026-07-01T03:00:00+02:00",
+      "cron: \"15 2 * * 1-5\" Europe/Berlin",
+      "ttl=15m",
+      {
+        type: "regex",
+        pattern: "deploy_window=2026-07-01T02:00:00\\+02:00\\.\\.2026-07-01T03:00:00\\+02:00",
+        label: "deploy window keeps both timezone-aware endpoints"
+      },
+      {
+        type: "regex",
+        pattern: "cron:\\s+\"15 2 \\* \\* 1-5\"\\s+Europe/Berlin",
+        label: "cron expression keeps timezone"
+      },
+      {
+        type: "regex",
+        pattern: "ttl=15m",
+        label: "ttl keeps exact unit"
+      }
+    ]
+  },
+  {
+    id: "failure-api-contract",
+    category: "failure-corpus",
+    failureClass: "api-contract",
+    file: "test/fixtures/failure-corpus/api-contract.md",
+    mode: "markdown",
+    source: `# Failure Corpus: API-Vertrag und Schema
+
+## Muss exakt bleiben
+
+- POST /v1/context-packs/{context_pack_id}/verify -> 200 OK
+- GET /v1/context-packs/{context_pack_id}/evidence?source_hash={source_hash} -> 206 Partial Content
+- 409 Conflict means receipt_hash mismatch; do not retry as success.
+- request.required: context_pack_id, receipt_hash, source_hash
+- response.required: gate.status, delivered_context.hash, source_evidence.coverage
+
+## Warum das kritisch ist
+
+Der Client darf POST und GET nicht vertauschen.
+Partial Content ist gewollt, weil nur begrenzte Originalzeilen geladen werden.
+Ein Receipt-Hash-Konflikt ist ein harter Review-Fall und kein erfolgreicher Retry.
+Die Request-Pflichtfelder verbinden Pack-ID, Receipt und Source-Hash.
+Die Response-Pflichtfelder belegen Gate, gelieferten Kontext und Source Evidence.
+
+## Rauschen
+
+Die API-Notiz wiederholt allgemeine Integrationshinweise.
+Die API-Notiz wiederholt allgemeine Integrationshinweise.
+Die API-Notiz wiederholt allgemeine Integrationshinweise.
+Die API-Notiz wiederholt allgemeine Integrationshinweise.
+Die API-Notiz wiederholt allgemeine Integrationshinweise.`,
+    keep: [
+      "POST /v1/context-packs/{context_pack_id}/verify -> 200 OK",
+      "GET /v1/context-packs/{context_pack_id}/evidence?source_hash={source_hash} -> 206 Partial Content",
+      "409 Conflict means receipt_hash mismatch; do not retry as success.",
+      "request.required: context_pack_id, receipt_hash, source_hash",
+      "response.required: gate.status, delivered_context.hash, source_evidence.coverage"
+    ],
+    expect: [
+      "POST /v1/context-packs/{context_pack_id}/verify -> 200 OK",
+      "GET /v1/context-packs/{context_pack_id}/evidence?source_hash={source_hash} -> 206 Partial Content",
+      "409 Conflict means receipt_hash mismatch; do not retry as success.",
+      "request.required: context_pack_id, receipt_hash, source_hash",
+      "response.required: gate.status, delivered_context.hash, source_evidence.coverage",
+      {
+        type: "regex",
+        pattern: "POST\\s+/v1/context-packs/\\{context_pack_id\\}/verify\\s+->\\s+200 OK",
+        label: "verify endpoint keeps POST and 200 OK"
+      },
+      {
+        type: "regex",
+        pattern: "GET\\s+/v1/context-packs/\\{context_pack_id\\}/evidence\\?source_hash=\\{source_hash\\}\\s+->\\s+206 Partial Content",
+        label: "evidence endpoint keeps GET and 206 Partial Content"
+      },
+      {
+        type: "regex",
+        pattern: "409 Conflict means receipt_hash mismatch; do not retry as success",
+        label: "receipt hash conflict remains a hard review case"
+      }
+    ]
+  },
+  {
+    id: "failure-data-migration-contract",
+    category: "failure-corpus",
+    failureClass: "data-migration-contract",
+    file: "test/fixtures/failure-corpus/data-migration-contract.md",
+    mode: "markdown",
+    source: `# Failure Corpus: Datenbank-Migration und Constraints
+
+## Muss exakt bleiben
+
+- ALTER TABLE invoices ADD CONSTRAINT invoices_account_id_fkey FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE RESTRICT;
+- CREATE UNIQUE INDEX CONCURRENTLY idx_users_email_lower ON users (lower(email)) WHERE deleted_at IS NULL;
+- UPDATE invoices SET status='archived' WHERE paid_at < '2025-01-01' AND status='paid';
+- rollback: DROP INDEX CONCURRENTLY idx_users_email_lower;
+- transaction: BEGIN; run backfill; COMMIT only after constraint validation.
+
+## Warum das kritisch ist
+
+Der Foreign-Key darf nicht zu \`ON DELETE CASCADE\` werden.
+Der eindeutige Index gilt nur für nicht gelöschte Nutzer.
+Das \`UPDATE\` darf ohne \`WHERE\` niemals laufen.
+Der Rollback muss denselben Index entfernen, nicht die ganze Tabelle.
+Der Commit darf erst nach der Constraint-Prüfung passieren.
+
+## Rauschen
+
+Die Migrationsnotiz wiederholt allgemeine Datenbankhinweise.
+Die Migrationsnotiz wiederholt allgemeine Datenbankhinweise.
+Die Migrationsnotiz wiederholt allgemeine Datenbankhinweise.
+Die Migrationsnotiz wiederholt allgemeine Datenbankhinweise.
+Die Migrationsnotiz wiederholt allgemeine Datenbankhinweise.`,
+    keep: [
+      "ALTER TABLE invoices ADD CONSTRAINT invoices_account_id_fkey FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE RESTRICT;",
+      "CREATE UNIQUE INDEX CONCURRENTLY idx_users_email_lower ON users (lower(email)) WHERE deleted_at IS NULL;",
+      "UPDATE invoices SET status='archived' WHERE paid_at < '2025-01-01' AND status='paid';",
+      "rollback: DROP INDEX CONCURRENTLY idx_users_email_lower;",
+      "transaction: BEGIN; run backfill; COMMIT only after constraint validation."
+    ],
+    expect: [
+      "ALTER TABLE invoices ADD CONSTRAINT invoices_account_id_fkey FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE RESTRICT;",
+      "CREATE UNIQUE INDEX CONCURRENTLY idx_users_email_lower ON users (lower(email)) WHERE deleted_at IS NULL;",
+      "UPDATE invoices SET status='archived' WHERE paid_at < '2025-01-01' AND status='paid';",
+      "rollback: DROP INDEX CONCURRENTLY idx_users_email_lower;",
+      "transaction: BEGIN; run backfill; COMMIT only after constraint validation.",
+      {
+        type: "regex",
+        pattern: "ON DELETE RESTRICT",
+        label: "foreign key keeps restrictive delete behavior"
+      },
+      {
+        type: "regex",
+        pattern: "UPDATE invoices SET status='archived' WHERE paid_at < '2025-01-01' AND status='paid';",
+        label: "update keeps bounded WHERE clause"
+      },
+      {
+        type: "regex",
+        pattern: "CREATE UNIQUE INDEX CONCURRENTLY idx_users_email_lower .* WHERE deleted_at IS NULL;",
+        label: "partial unique index keeps predicate"
+      }
+    ]
+  },
+  {
+    id: "failure-idempotency-concurrency",
+    category: "failure-corpus",
+    failureClass: "idempotency-concurrency",
+    file: "test/fixtures/failure-corpus/idempotency-concurrency.md",
+    mode: "markdown",
+    source: `# Failure Corpus: Idempotenz und Nebenlaeufigkeit
+
+## Muss exakt bleiben
+
+- Idempotency-Key header is required for POST /v1/payments/capture.
+- idempotency_key UNIQUE prevents duplicate charge capture.
+- SELECT * FROM payment_jobs WHERE status='queued' FOR UPDATE SKIP LOCKED;
+- isolation_level=serializable
+- retry_on_conflict=false after charge_captured=true
+
+## Warum das kritisch ist
+
+Ohne Idempotency-Key kann derselbe Capture doppelt laufen.
+Die UNIQUE-Regel koppelt Wiederholungen an denselben Request.
+SKIP LOCKED verhindert, dass zwei Worker denselben Job bearbeiten.
+Serializable verhindert verlorene Updates.
+Nach charge_captured=true darf kein Retry als neuer Capture laufen.
+
+## Rauschen
+
+Die Betriebsnotiz wiederholt allgemeine Queue-Hinweise.
+Die Betriebsnotiz wiederholt allgemeine Queue-Hinweise.
+Die Betriebsnotiz wiederholt allgemeine Queue-Hinweise.
+Die Betriebsnotiz wiederholt allgemeine Queue-Hinweise.
+Die Betriebsnotiz wiederholt allgemeine Queue-Hinweise.`,
+    keep: [
+      "Idempotency-Key header is required for POST /v1/payments/capture.",
+      "idempotency_key UNIQUE prevents duplicate charge capture.",
+      "SELECT * FROM payment_jobs WHERE status='queued' FOR UPDATE SKIP LOCKED;",
+      "isolation_level=serializable",
+      "retry_on_conflict=false after charge_captured=true"
+    ],
+    expect: [
+      "Idempotency-Key header is required for POST /v1/payments/capture.",
+      "idempotency_key UNIQUE prevents duplicate charge capture.",
+      "SELECT * FROM payment_jobs WHERE status='queued' FOR UPDATE SKIP LOCKED;",
+      "isolation_level=serializable",
+      "retry_on_conflict=false after charge_captured=true",
+      {
+        type: "regex",
+        pattern: "Idempotency-Key header is required for POST /v1/payments/capture",
+        label: "capture endpoint keeps required idempotency header"
+      },
+      {
+        type: "regex",
+        pattern: "FOR UPDATE SKIP LOCKED",
+        label: "queue query keeps skip locked semantics"
+      },
+      {
+        type: "regex",
+        pattern: "retry_on_conflict=false after charge_captured=true",
+        label: "retry remains disabled after capture"
+      }
+    ]
+  },
+  {
+    id: "failure-locale-encoding",
+    category: "failure-corpus",
+    failureClass: "locale-encoding",
+    file: "test/fixtures/failure-corpus/locale-encoding.md",
+    mode: "markdown",
+    source: `# Failure Corpus: Locale, Encoding und Normalisierung
+
+## Muss exakt bleiben
+
+- charset=UTF-8
+- normalization=NFC
+- locale=de-DE
+- collation=de_DE.UTF-8
+- case_sensitive=true for query "Ärger" != "ärger"
+
+## Warum das kritisch ist
+
+UTF-8 bewahrt Umlaute in München, Straße und Größe.
+NFC verhindert Trefferverluste durch kombinierte Zeichen.
+Die deutsche Locale sortiert Ä, Ö, Ü und ß bewusst anders als rohe Bytes.
+case_sensitive=true verhindert, dass Ärger und ärger gleich behandelt werden.
+Falsches Encoding macht aus Müller schnell kaputte Such- und Slug-Daten.
+
+## Rauschen
+
+Die Internationalisierungsnotiz wiederholt allgemeine UI-Hinweise.
+Die Internationalisierungsnotiz wiederholt allgemeine UI-Hinweise.
+Die Internationalisierungsnotiz wiederholt allgemeine UI-Hinweise.
+Die Internationalisierungsnotiz wiederholt allgemeine UI-Hinweise.
+Die Internationalisierungsnotiz wiederholt allgemeine UI-Hinweise.`,
+    keep: [
+      "charset=UTF-8",
+      "normalization=NFC",
+      "locale=de-DE",
+      "collation=de_DE.UTF-8",
+      "case_sensitive=true for query \"Ärger\" != \"ärger\""
+    ],
+    expect: [
+      "charset=UTF-8",
+      "normalization=NFC",
+      "locale=de-DE",
+      "collation=de_DE.UTF-8",
+      "case_sensitive=true for query \"Ärger\" != \"ärger\"",
+      {
+        type: "regex",
+        pattern: "charset=UTF-8",
+        label: "charset stays UTF-8"
+      },
+      {
+        type: "regex",
+        pattern: "normalization=NFC",
+        label: "unicode normalization stays NFC"
+      },
+      {
+        type: "regex",
+        pattern: "case_sensitive=true for query \"Ärger\" != \"ärger\"",
+        label: "case-sensitive umlaut query remains exact"
+      }
+    ]
+  },
+  {
+    id: "failure-auth-scope-contract",
+    category: "failure-corpus",
+    failureClass: "auth-scope-contract",
+    file: "test/fixtures/failure-corpus/auth-scope-contract.md",
+    mode: "markdown",
+    source: `# Failure Corpus: Auth Scope und Rollenvertrag
+
+## Muss exakt bleiben
+
+- required_scopes=openid profile email repo:read repo:write
+- role=admin must not degrade to viewer
+- claims.required=tenant_id,org_id,email_verified
+- audience=api://sparkompass-prod
+- permission=payments.capture:write
+
+## Warum das kritisch ist
+
+OAuth-Scopes entscheiden, ob Codex den richtigen API-Pfad pruefen kann.
+Die Admin-Rolle darf in einem Fix nicht zur Viewer-Rolle vereinfacht werden.
+Tenant- und Organisationsclaims sind Pflicht fuer Mandantentrennung.
+Die Audience verhindert Token fuer falsche Dienste.
+Die Capture-Schreibberechtigung ist absichtlich enger als eine breite Payment-Berechtigung.
+
+## Rauschen
+
+Die Auth-Notiz wiederholt allgemeine Login-Hinweise.
+Die Auth-Notiz wiederholt allgemeine Login-Hinweise.
+Die Auth-Notiz wiederholt allgemeine Login-Hinweise.
+Die Auth-Notiz wiederholt allgemeine Login-Hinweise.
+Die Auth-Notiz wiederholt allgemeine Login-Hinweise.`,
+    keep: [
+      "required_scopes=openid profile email repo:read repo:write",
+      "role=admin must not degrade to viewer",
+      "claims.required=tenant_id,org_id,email_verified",
+      "audience=api://sparkompass-prod",
+      "permission=payments.capture:write"
+    ],
+    expect: [
+      "required_scopes=openid profile email repo:read repo:write",
+      "role=admin must not degrade to viewer",
+      "claims.required=tenant_id,org_id,email_verified",
+      "audience=api://sparkompass-prod",
+      "permission=payments.capture:write",
+      {
+        type: "regex",
+        pattern: "required_scopes=openid profile email repo:read repo:write",
+        label: "required OAuth scopes stay exact"
+      },
+      {
+        type: "regex",
+        pattern: "claims\\.required=tenant_id,org_id,email_verified",
+        label: "required claims stay exact"
+      },
+      {
+        type: "regex",
+        pattern: "permission=payments\\.capture:write",
+        label: "write permission stays narrowed"
+      }
+    ]
+  },
+  {
+    id: "failure-crypto-signature-contract",
+    category: "failure-corpus",
+    failureClass: "crypto-signature-contract",
+    file: "test/fixtures/failure-corpus/crypto-signature-contract.md",
+    mode: "markdown",
+    source: `# Failure Corpus: Crypto Signature und Hashvertrag
+
+## Muss exakt bleiben
+
+- alg=RS256
+- kid=prod-key-2026-07
+- jwks_uri=https://auth.example.com/.well-known/jwks.json
+- expected_sha256=sha256:9f4c2e1d8b7a6c5d4e3f2019a8b7c6d5e4f30192837465abcdefabcdef123456
+- signature_header=X-Sparkompass-Signature
+
+## Warum das kritisch ist
+
+Der Signaturalgorithmus ist asymmetrisch und darf nicht zu einem symmetrischen Verfahren vereinfacht werden.
+Der Key-Identifier waehlt den richtigen oeffentlichen Schluessel.
+Die JWKS-Adresse ist die einzige erlaubte Quelle fuer Verifikationskeys.
+Der erwartete Digest beweist die unveraenderte Artefaktdatei.
+Der Header-Name muss exakt bleiben, weil Middleware nur diesen Header prueft.
+
+## Rauschen
+
+Die Signatur-Notiz wiederholt allgemeine Sicherheits-Hinweise.
+Die Signatur-Notiz wiederholt allgemeine Sicherheits-Hinweise.
+Die Signatur-Notiz wiederholt allgemeine Sicherheits-Hinweise.
+Die Signatur-Notiz wiederholt allgemeine Sicherheits-Hinweise.
+Die Signatur-Notiz wiederholt allgemeine Sicherheits-Hinweise.`,
+    keep: [
+      "alg=RS256",
+      "kid=prod-key-2026-07",
+      "jwks_uri=https://auth.example.com/.well-known/jwks.json",
+      "expected_sha256=sha256:9f4c2e1d8b7a6c5d4e3f2019a8b7c6d5e4f30192837465abcdefabcdef123456",
+      "signature_header=X-Sparkompass-Signature"
+    ],
+    expect: [
+      "alg=RS256",
+      "kid=prod-key-2026-07",
+      "jwks_uri=https://auth.example.com/.well-known/jwks.json",
+      "expected_sha256=sha256:9f4c2e1d8b7a6c5d4e3f2019a8b7c6d5e4f30192837465abcdefabcdef123456",
+      "signature_header=X-Sparkompass-Signature",
+      {
+        type: "regex",
+        pattern: "alg=RS256",
+        label: "JWT algorithm stays asymmetric"
+      },
+      {
+        type: "regex",
+        pattern: "expected_sha256=sha256:[a-f0-9]{64}",
+        label: "sha256 digest stays exact"
+      },
+      {
+        type: "regex",
+        pattern: "signature_header=X-Sparkompass-Signature",
+        label: "signature header stays exact"
+      }
+    ]
+  },
+  {
+    id: "failure-money-currency-contract",
+    category: "failure-corpus",
+    failureClass: "money-currency-contract",
+    file: "test/fixtures/failure-corpus/money-currency-contract.md",
+    mode: "markdown",
+    source: `# Failure Corpus: Money Currency und Rundung
+
+## Muss exakt bleiben
+
+- amount_cents=123456
+- currency=EUR
+- vat_rate=19%
+- fee_bps=30
+- rounding_mode=half_up
+- minor_units=2
+
+## Warum das kritisch ist
+
+Der Betrag wird in kleinster Einheit gespeichert und darf nicht als grober Dezimalwert interpretiert werden.
+Der ISO-Waehrungscode entscheidet ueber Buchhaltung, Auszahlung und Anzeige.
+Der Steuerprozentsatz ist Bestandteil der Rechnung und muss exakt bleiben.
+Die Plattformgebuehr wird in Basispunkten berechnet.
+Die Rundungsregel verhindert Cent-Differenzen zwischen Auftrag, Rechnung und Zahlung.
+Die Anzahl der Nachkommastellen ist fuer diese Waehrung fest definiert.
+
+## Rauschen
+
+Die Billing-Notiz wiederholt allgemeine Checkout-Hinweise.
+Die Billing-Notiz wiederholt allgemeine Checkout-Hinweise.
+Die Billing-Notiz wiederholt allgemeine Checkout-Hinweise.
+Die Billing-Notiz wiederholt allgemeine Checkout-Hinweise.
+Die Billing-Notiz wiederholt allgemeine Checkout-Hinweise.`,
+    keep: [
+      "amount_cents=123456",
+      "currency=EUR",
+      "vat_rate=19%",
+      "fee_bps=30",
+      "rounding_mode=half_up",
+      "minor_units=2"
+    ],
+    expect: [
+      "amount_cents=123456",
+      "currency=EUR",
+      "vat_rate=19%",
+      "fee_bps=30",
+      "rounding_mode=half_up",
+      "minor_units=2",
+      {
+        type: "regex",
+        pattern: "amount_cents=123456",
+        label: "minor-unit amount stays exact"
+      },
+      {
+        type: "regex",
+        pattern: "vat_rate=19%",
+        label: "VAT rate stays exact"
+      },
+      {
+        type: "regex",
+        pattern: "rounding_mode=half_up",
+        label: "rounding mode stays exact"
+      }
+    ]
+  },
+  {
+    id: "failure-destructive-operation",
+    category: "failure-corpus",
+    failureClass: "destructive-operation",
+    file: "test/fixtures/failure-corpus/destructive-operation.md",
+    mode: "markdown",
+    source: `# Failure Corpus: Destruktive Operationen
+
+## Muss exakt bleiben
+
+- rm -rf /srv/prod/uploads --one-file-system
+- kubectl delete namespace billing-prod --wait=false
+- terraform destroy -target=module.payments-prod --auto-approve
+- aws s3 rm s3://billing-prod-ledger --recursive --exclude "*.keep"
+- git reset --hard origin/main
+
+## Warum das kritisch ist
+
+Das Zielverzeichnis entscheidet, ob Cache oder produktive Nutzerdaten geloescht werden.
+Der Kubernetes-Namespace bestimmt, ob Test- oder Produktionsressourcen entfernt werden.
+Der Terraform-Target begrenzt oder erweitert den Zerstoerungsradius.
+Die S3-Option --recursive entscheidet, ob einzelne Objekte oder ganze Prefixe geloescht werden.
+Der Git-Reset auf origin/main verwirft lokale Aenderungen unwiderruflich.
+
+## Rauschen
+
+Die Deployment-Notiz wiederholt allgemeine Rollback-Hinweise.
+Die Deployment-Notiz wiederholt allgemeine Rollback-Hinweise.
+Die Deployment-Notiz wiederholt allgemeine Rollback-Hinweise.
+Die Deployment-Notiz wiederholt allgemeine Rollback-Hinweise.
+Die Deployment-Notiz wiederholt allgemeine Rollback-Hinweise.`,
+    keep: [
+      "rm -rf /srv/prod/uploads --one-file-system",
+      "kubectl delete namespace billing-prod --wait=false",
+      "terraform destroy -target=module.payments-prod --auto-approve",
+      "aws s3 rm s3://billing-prod-ledger --recursive --exclude \"*.keep\"",
+      "git reset --hard origin/main"
+    ],
+    expect: [
+      "rm -rf /srv/prod/uploads --one-file-system",
+      "kubectl delete namespace billing-prod --wait=false",
+      "terraform destroy -target=module.payments-prod --auto-approve",
+      "aws s3 rm s3://billing-prod-ledger --recursive --exclude \"*.keep\"",
+      "git reset --hard origin/main",
+      {
+        type: "regex",
+        pattern: "rm -rf /srv/prod/uploads --one-file-system",
+        label: "rm target stays exact"
+      },
+      {
+        type: "regex",
+        pattern: "terraform destroy -target=module\\.payments-prod --auto-approve",
+        label: "terraform destroy target stays exact"
+      },
+      {
+        type: "regex",
+        pattern: "aws s3 rm s3://billing-prod-ledger --recursive",
+        label: "recursive bucket deletion stays visible"
+      }
+    ]
+  },
+  {
+    id: "failure-pattern-contract",
+    category: "failure-corpus",
+    failureClass: "pattern-contract",
+    file: "test/fixtures/failure-corpus/pattern-contract.md",
+    mode: "markdown",
+    source: `# Failure Corpus: Regex Glob und Matcher
+
+## Muss exakt bleiben
+
+- route_regex=^/api/(auth|billing)/v[0-9]+/callback$
+- path_glob=packages/*/src/**/*.ts
+- deny_pattern=^(?!prod-[a-z0-9-]+$).*
+- mask_regex=(?<=token=)[A-Za-z0-9_-]{16,}
+- ignore_glob=!(*.spec).{ts,tsx}
+
+## Warum das kritisch ist
+
+Der Route-Regex bestimmt, welche Webhook-Callbacks akzeptiert werden.
+Der Glob entscheidet, welche Paketquellen im Monorepo geladen werden.
+Das Deny-Pattern verhindert, dass Nicht-Produktionsnamen als Produktionsressourcen behandelt werden.
+Der Mask-Regex muss Tokens erkennen, ohne den Prefix token= zu entfernen.
+Der Ignore-Glob schliesst Tests aus, ohne normale TypeScript-Dateien zu verlieren.
+
+## Rauschen
+
+Die Pattern-Notiz wiederholt allgemeine Matcher-Hinweise.
+Die Pattern-Notiz wiederholt allgemeine Matcher-Hinweise.
+Die Pattern-Notiz wiederholt allgemeine Matcher-Hinweise.
+Die Pattern-Notiz wiederholt allgemeine Matcher-Hinweise.
+Die Pattern-Notiz wiederholt allgemeine Matcher-Hinweise.`,
+    keep: [
+      "route_regex=^/api/(auth|billing)/v[0-9]+/callback$",
+      "path_glob=packages/*/src/**/*.ts",
+      "deny_pattern=^(?!prod-[a-z0-9-]+$).*",
+      "mask_regex=(?<=token=)[A-Za-z0-9_-]{16,}",
+      "ignore_glob=!(*.spec).{ts,tsx}"
+    ],
+    expect: [
+      "route_regex=^/api/(auth|billing)/v[0-9]+/callback$",
+      "path_glob=packages/*/src/**/*.ts",
+      "deny_pattern=^(?!prod-[a-z0-9-]+$).*",
+      "mask_regex=(?<=token=)[A-Za-z0-9_-]{16,}",
+      "ignore_glob=!(*.spec).{ts,tsx}",
+      {
+        type: "regex",
+        pattern: "route_regex=\\^/api/\\(auth\\|billing\\)/v\\[0-9\\]\\+/callback\\$",
+        label: "route regex stays escaped"
+      },
+      {
+        type: "regex",
+        pattern: "path_glob=packages/\\*/src/\\*\\*/\\*\\.ts",
+        label: "double-star glob stays exact"
+      },
+      {
+        type: "regex",
+        pattern: "mask_regex=\\(\\?<=token=\\)\\[A-Za-z0-9_-\\]\\{16,\\}",
+        label: "lookbehind mask stays exact"
+      }
+    ]
+  },
+  {
+    id: "failure-web-security-header",
+    category: "failure-corpus",
+    failureClass: "web-security-header",
+    file: "test/fixtures/failure-corpus/web-security-header.md",
+    mode: "markdown",
+    source: `# Failure Corpus: Web Security Header und Cookies
+
+## Muss exakt bleiben
+
+- Set-Cookie: session=opaque; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=900
+- Access-Control-Allow-Origin: https://app.example.com
+- Access-Control-Allow-Credentials: true
+- Content-Security-Policy: default-src 'self'; script-src 'self' 'nonce-r4nd0m'; frame-ancestors 'none'
+- csrf_header=X-CSRF-Token required, reject missing Origin mismatch
+
+## Warum das kritisch ist
+
+Das Cookie darf nicht ohne HttpOnly, Secure, SameSite, Path oder Max-Age ausgeliefert werden.
+Die CORS-Origin muss exakt auf die App-Domain begrenzt bleiben.
+Credentials duerfen nur zusammen mit der expliziten Origin erlaubt sein.
+Die CSP-Nonce und frame-ancestors 'none' verhindern Script- und Framing-Regressions.
+Der CSRF-Header ist Pflicht und muss bei Origin-Mismatch ablehnen.
+
+## Rauschen
+
+Die Web-Security-Notiz erklaert allgemeine Browser-Schutzmechanismen.
+Die Web-Security-Notiz erklaert allgemeine Browser-Schutzmechanismen.
+Die Web-Security-Notiz erklaert allgemeine Browser-Schutzmechanismen.
+Die Web-Security-Notiz erklaert allgemeine Browser-Schutzmechanismen.
+Die Web-Security-Notiz erklaert allgemeine Browser-Schutzmechanismen.`,
+    keep: [
+      "Set-Cookie: session=opaque; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=900",
+      "Access-Control-Allow-Origin: https://app.example.com",
+      "Access-Control-Allow-Credentials: true",
+      "Content-Security-Policy: default-src 'self'; script-src 'self' 'nonce-r4nd0m'; frame-ancestors 'none'",
+      "csrf_header=X-CSRF-Token required, reject missing Origin mismatch"
+    ],
+    expect: [
+      "Set-Cookie: session=opaque; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=900",
+      "Access-Control-Allow-Origin: https://app.example.com",
+      "Access-Control-Allow-Credentials: true",
+      "Content-Security-Policy: default-src 'self'; script-src 'self' 'nonce-r4nd0m'; frame-ancestors 'none'",
+      "csrf_header=X-CSRF-Token required, reject missing Origin mismatch",
+      {
+        type: "regex",
+        pattern: "Set-Cookie: session=opaque; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=900",
+        label: "cookie attributes stay exact"
+      },
+      {
+        type: "regex",
+        pattern: "Access-Control-Allow-Origin: https://app\\.example\\.com",
+        label: "cors origin stays exact"
+      },
+      {
+        type: "regex",
+        pattern: "Content-Security-Policy: default-src 'self'; script-src 'self' 'nonce-r4nd0m'; frame-ancestors 'none'",
+        label: "csp nonce and frame ancestors stay exact"
       }
     ]
   }
@@ -853,6 +1822,7 @@ function summarizeTaskOutcome(outcome) {
     output_tokens: outcome.result.combined.estimated_tokens,
     duration_ms: outcome.result.duration_ms,
     output_oracle_success: outcome.output_oracle.result.success,
+    output_oracle_sensitivity_success: outcome.output_oracle.sensitivity.success,
     receipt_verification_status: outcome.context_pack?.receipt_verification?.status || "not-linked",
     reasons: outcome.gate.reasons
   };

@@ -2,7 +2,7 @@
 
 ![Codex Sparkompass Struktur](docs/assets/sparkompass-structure.svg)
 
-**Status:** `v0.1.0-alpha.0` Technical Preview.
+**Status:** `v0.1.0-alpha.1` Technical Preview.
 
 Codex Sparkompass ist eine lokale Context-Control-Plane für Codex-Workflows. Das Tool hilft, vor einem Codex-Lauf weniger unnötigen Kontext zu senden, wichtige Fakten zu schützen, Originalstellen später gezielt nachzuladen und Einsparungen mit Qualitätsgates zu verbinden.
 
@@ -15,6 +15,7 @@ Codex wird teuer und unübersichtlich, wenn ganze Repos, lange Logs, große READ
 - erst relevante Dateien und semantische Einheiten finden
 - große Inhalte als ContextPack oder Handoff-Receipt verdichten
 - Muss-Fakten, Fehlercodes und Pfade mit Receipts schützen
+- TaskOutcomes nur zählen, wenn Output-Orakel gefunden und sensitiv sind
 - bei Unsicherheit auf mehr Kontext oder Vollkontext zurückfallen
 - offizielle Codex-JSONL-Usage und lokale TaskOutcomes als Evidenz sammeln
 - automatisch zwischen `bypass`, `compact`, `lazy` und `full` vorbereiten
@@ -27,11 +28,13 @@ Codex wird teuer und unübersichtlich, wenn ganze Repos, lange Logs, große READ
 | --- | ---: |
 | Lokaler Codex A/B-Lauf, Gesamt-Tokens | `8.417` weniger, `21%` Ersparnis |
 | Lokaler Codex A/B-Lauf, nicht gecachter Input | `16.051` weniger, `42%` Ersparnis |
-| Benchmark-Ersparnis | `55%` |
-| Pilot-Startkontext-Ersparnis | `49%` |
-| Pilot-sendbare-Prompt-Ersparnis | `24%` |
+| Benchmark-Ersparnis | `52%` |
+| Pilot-Startkontext-Ersparnis | `42%` |
+| Pilot-sendbare-Prompt-Ersparnis | `18%` |
 
 Die Codex-Zahlen stammen aus dokumentierten `codex exec --json` Usage-Events und sind in [docs/official-codex-usage-evidence.md](docs/official-codex-usage-evidence.md) beschrieben. Sie sind ein lokaler Laufbeleg, keine Rechnung und kein allgemeines Sparversprechen.
+
+Für Release- und GitHub-Belege trennt `sparkompass impact` Brutto-Ersparnis, sicher verifizierte Einträge und qualitätsgegatede positive Ersparnis: Review-pflichtige Packs, sichere Null-Ersparnis-Fälle, Handoffs ohne Startkontext-Gewinn oder vorbereitete Prompts ohne sendbaren Gewinn verbessern keine verifizierte Sparzahl.
 
 ## Schnellstart
 
@@ -85,11 +88,12 @@ Erzeugt eine knappe Empfehlung plus einen engeren Prompt.
 ```bash
 sparkompass pack \
   --file "debug.log" \
+  --target auto \
   --keep "AUTH_RESET_TOKEN_EXPIRED" \
   --expect "Auth reset test passes"
 ```
 
-`pack` erzeugt ein `ContextPackReceiptV1`. Wenn wichtige Fakten fehlen, erweitert Sparkompass den Kontext oder fällt auf Vollkontext zurück.
+`pack --target auto` sucht zuerst die kleinste verifizierte Zielgröße. Als `verified-auto-target` gilt die Auswahl nur, wenn ein explizites `--expect` oder `--expect-regex` als Oracle bestanden wurde und dieses Oracle auf Gegenfakten sensibel reagiert. Ein zu breites Regex wie `DEBUG` kann deshalb `oracle-insensitive` auslösen, wenn eine Entfernung unbemerkt bliebe. Ohne Oracle bleibt Sparkompass bei der normalen Profil-Baseline und markiert `oracle_gate: oracle-required`, statt zusätzliche Ersparnis als qualitätsgesichert zu verkaufen. Das Receipt zeigt `ContextAutoTargetV1`, die getesteten Zielgrößen, die normale Profil-Baseline, `oracle_gate`, `savings_gate` und die Zusatzersparnis gegenüber dem normalen Profilziel. Wenn wichtige Fakten fehlen, erweitert Sparkompass den Kontext oder fällt auf Vollkontext zurück.
 
 ### Handoff mit Sparbalken bauen
 
@@ -149,8 +153,8 @@ Diese Alpha ist als GitHub Technical Preview veröffentlichbar. Stable ist erst 
 
 Aktueller lokaler Stand:
 
-- Tests: `227/227`
-- Release-Audit: `30/30`
+- Tests: `277/277`
+- Release-Audit: `31/31`
 - Package-Audit: `verified-package-dry-run`
 - Package-Smoke: `verified-package-install-smoke`
 - Plugin-Smoke: `verified-plugin-install-smoke`

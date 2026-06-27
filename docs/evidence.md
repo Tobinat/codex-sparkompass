@@ -22,17 +22,17 @@ Gate: `verified-codex-official-usage-comparison`
 
 | Signal | Wert |
 | --- | ---: |
-| Tests | `227/227` |
-| Benchmark-Fälle | `10` |
-| Failure-Corpus | `7/7` |
-| Gegenfakten im Benchmark erkannt | `42/42` |
-| Benchmark-Ersparnis | `55%` |
-| Benchmark-Gesamtkosten pro verifiziertem Task | `120` Tokens |
+| Tests | `277/277` |
+| Benchmark-Fälle | `26` |
+| Failure-Corpus | `23/23` |
+| Gegenfakten im Benchmark erkannt | `169/169` |
+| Benchmark-Ersparnis | `52%` |
+| Benchmark-Gesamtkosten pro verifiziertem Task | `133` Tokens |
 | Benchmark-Task-Erfolgsdelta | `0%` |
-| Dogfood durchschnittliche Ersparnis | `41%` |
+| Dogfood durchschnittliche Ersparnis | `36%` |
 | Dogfood kritische Anker-Erhaltung | `100%` |
-| Pilot-Startkontext-Ersparnis | `49%` |
-| Pilot-sendbare-Prompt-Ersparnis | `24%` |
+| Pilot-Startkontext-Ersparnis | `42%` |
+| Pilot-sendbare-Prompt-Ersparnis | `18%` |
 
 ## Release-Gates
 
@@ -45,6 +45,7 @@ Gate: `verified-codex-official-usage-comparison`
 | Package-Dry-Run | `verified-package-dry-run` |
 | Package-Install-Smoke | `verified-package-install-smoke` |
 | Plugin-Install-Smoke | `verified-plugin-install-smoke` |
+| GitHub-Claims-Audit | `verified-github-release-claims` |
 | Release-Audit | `verified-release-audit` |
 | GatePath | `verified-gate-path-prepared` |
 

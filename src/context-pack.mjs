@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { buildAcceptanceOracle, evaluateAcceptanceOracle } from "./acceptance-oracle.mjs";
+import { buildAcceptanceOracle, buildCounterfactualChecks, evaluateAcceptanceOracle } from "./acceptance-oracle.mjs";
 import { compressText } from "./compressor.mjs";
 import { resolveContextPolicy } from "./context-policy.mjs";
 import { calculateSavings, formatSavingsBar } from "./savings.mjs";
@@ -51,6 +51,7 @@ Quelle: ${receipt.source.label}
 Status: ${receipt.gate.status}
 Risikoprofil: ${receipt.context_selection.policy.risk_profile}
 Fallback: ${receipt.fallback.used ? receipt.fallback.mode : "nicht genutzt"}
+${formatAutoTarget(receipt.context_selection.auto_target)}
 Sparbalken: ${formatSavingsBar(toDeliveredSavings(receipt))}
 ${formatCompactCandidateSavings(receipt)}
 
@@ -85,9 +86,12 @@ function buildReceipt({ label, sourceHash, contextStats, contextText, decision }
   const contextPackId = `ctx-${sha256(`${sourceHash}:${compressed.text}:${Date.now()}`).slice(0, 12)}`;
   const quality = compressed.quality;
   const deliveredAcceptance = evaluatePackAcceptance(contextText, decision.oracle);
+  const deliveredSensitivity = evaluateOracleSensitivity(contextText, decision.oracle);
   const gateStatus = getGateStatus(decision.mode, {
     sourceAcceptance: decision.sourceAcceptance,
-    deliveredAcceptance
+    deliveredAcceptance,
+    sourceSensitivity: decision.sourceSensitivity,
+    deliveredSensitivity
   });
   const unresolvedReasons = decision.mode === "full-context" ? decision.reasons : [];
   const attempts = decision.attempts.map(stripAttempt);
@@ -159,7 +163,13 @@ function buildReceipt({ label, sourceHash, contextStats, contextText, decision }
       risky: quality.status === "riskant",
       warnings: quality.warnings
     },
-    acceptance_oracle: buildAcceptanceReceipt(decision.oracle, decision.sourceAcceptance, deliveredAcceptance),
+    acceptance_oracle: buildAcceptanceReceipt(
+      decision.oracle,
+      decision.sourceAcceptance,
+      deliveredAcceptance,
+      decision.sourceSensitivity,
+      deliveredSensitivity
+    ),
     fallback: {
       used: decision.mode !== "compact-context",
       mode: decision.mode,
@@ -184,6 +194,7 @@ function buildReceipt({ label, sourceHash, contextStats, contextText, decision }
         source_evidence_coverage_percent: 100,
         risky_compressions: 0,
         acceptance_oracle_success: decision.oracle.expectations.length ? true : null,
+        acceptance_oracle_sensitivity: decision.oracle.expectations.length ? true : null,
         fallback_on_uncertainty: true,
         expand_before_full_context: true
       }
@@ -191,10 +202,29 @@ function buildReceipt({ label, sourceHash, contextStats, contextText, decision }
   };
 }
 
+function formatAutoTarget(autoTarget) {
+  if (!autoTarget?.enabled) return "";
+  const selected = autoTarget.selected_target_percent
+    ? `${autoTarget.selected_target_percent}%`
+    : "keine verifizierte Kompaktgröße";
+  const extra = Number.isFinite(autoTarget.additional_saved_tokens_vs_baseline)
+    && autoTarget.additional_saved_tokens_vs_baseline > 0
+    ? `, zusätzlich ca. ${formatNumber(autoTarget.additional_saved_tokens_vs_baseline)} Tokens gegenüber ${autoTarget.baseline_target_percent}%`
+    : "";
+  const savingsGate = autoTarget.savings_gate
+    ? `, Savings-Gate ${autoTarget.savings_gate}`
+    : "";
+  const oracleGate = autoTarget.oracle_gate
+    ? `, Oracle-Gate ${autoTarget.oracle_gate}`
+    : "";
+  return `Auto-Target: ${autoTarget.status}, gewählt ${selected}${extra}${savingsGate}${oracleGate}`;
+}
+
 function chooseVerifiedContext(normalized, options) {
   const policy = resolveContextPolicy(options);
   const oracle = buildPackAcceptanceOracle(options);
   const sourceAcceptance = evaluatePackAcceptance(normalized, oracle);
+  const sourceSensitivity = evaluateOracleSensitivity(normalized, oracle);
   const requestedTargetPercent = policy.effective_target_percent;
   const targets = buildTargetPercents(policy);
   const attempts = [];
@@ -207,17 +237,21 @@ function chooseVerifiedContext(normalized, options) {
     });
     lastCompressed = compressed;
     const candidateAcceptance = evaluatePackAcceptance(compressed.text, oracle);
+    const candidateSensitivity = evaluateOracleSensitivity(compressed.text, oracle);
     const reasons = getFallbackReasons(compressed, {
       sourceAcceptance,
-      candidateAcceptance
+      candidateAcceptance,
+      sourceSensitivity,
+      candidateSensitivity
     });
-    attempts.push(buildAttempt(compressed, targetPercent, reasons, candidateAcceptance));
+    attempts.push(buildAttempt(compressed, targetPercent, reasons, candidateAcceptance, candidateSensitivity));
 
     if (!reasons.length) {
       return {
         mode: targetPercent === requestedTargetPercent ? "compact-context" : "expanded-context",
         oracle,
         sourceAcceptance,
+        sourceSensitivity,
         policy,
         requestedTargetPercent,
         targetPercent,
@@ -237,6 +271,7 @@ function chooseVerifiedContext(normalized, options) {
     mode: "full-context",
     oracle,
     sourceAcceptance,
+    sourceSensitivity,
     policy,
     requestedTargetPercent,
     targetPercent: 100,
@@ -254,7 +289,7 @@ function buildTargetPercents(policy) {
   return [...new Set(targets)].sort((left, right) => left - right);
 }
 
-function buildAttempt(compressed, targetPercent, reasons, acceptanceResult) {
+function buildAttempt(compressed, targetPercent, reasons, acceptanceResult, sensitivityResult) {
   return {
     target_percent: targetPercent,
     status: reasons.length ? "uncertain" : "verified",
@@ -265,7 +300,9 @@ function buildAttempt(compressed, targetPercent, reasons, acceptanceResult) {
     critical_anchor_retention_percent: compressed.quality.criticalAnchorRetentionPercent,
     source_evidence_coverage_percent: compressed.quality.sourceCoveragePercent,
     acceptance_oracle_success: acceptanceResult ? acceptanceResult.success : null,
-    acceptance_oracle_missing: acceptanceResult ? acceptanceResult.missing : []
+    acceptance_oracle_missing: acceptanceResult ? acceptanceResult.missing : [],
+    acceptance_oracle_sensitivity_success: sensitivityResult ? sensitivityResult.success : null,
+    acceptance_oracle_sensitivity_missed: sensitivityResult ? sensitivityResult.missed : []
   };
 }
 
@@ -280,13 +317,17 @@ function stripAttempt(attempt) {
     critical_anchor_retention_percent: attempt.critical_anchor_retention_percent,
     source_evidence_coverage_percent: attempt.source_evidence_coverage_percent,
     acceptance_oracle_success: attempt.acceptance_oracle_success,
-    acceptance_oracle_missing: attempt.acceptance_oracle_missing
+    acceptance_oracle_missing: attempt.acceptance_oracle_missing,
+    acceptance_oracle_sensitivity_success: attempt.acceptance_oracle_sensitivity_success,
+    acceptance_oracle_sensitivity_missed: attempt.acceptance_oracle_sensitivity_missed
   };
 }
 
 function getGateStatus(mode, verification = {}) {
   if (verification.sourceAcceptance && !verification.sourceAcceptance.success) return "acceptance-oracle-source-failed";
+  if (verification.sourceSensitivity && !verification.sourceSensitivity.success) return "acceptance-oracle-source-insensitive";
   if (verification.deliveredAcceptance && !verification.deliveredAcceptance.success) return "acceptance-oracle-failed";
+  if (verification.deliveredSensitivity && !verification.deliveredSensitivity.success) return "acceptance-oracle-insensitive";
   if (mode === "expanded-context") return "verified-expanded-context";
   if (mode === "full-context") return "fallback-full-context";
   return "verified-publishable";
@@ -310,8 +351,12 @@ function getFallbackReasons(compressed, verification = {}) {
   }
   if (verification.sourceAcceptance && !verification.sourceAcceptance.success) {
     reasons.push("source-acceptance-oracle-failed");
+  } else if (verification.sourceSensitivity && !verification.sourceSensitivity.success) {
+    reasons.push("source-acceptance-oracle-insensitive");
   } else if (verification.candidateAcceptance && !verification.candidateAcceptance.success) {
     reasons.push("acceptance-oracle-miss");
+  } else if (verification.candidateSensitivity && !verification.candidateSensitivity.success) {
+    reasons.push("acceptance-oracle-insensitive");
   }
 
   return [...new Set(reasons)];
@@ -341,14 +386,43 @@ function evaluatePackAcceptance(text, oracle) {
   return evaluateAcceptanceOracle(text, oracle);
 }
 
-function buildAcceptanceReceipt(oracle, sourceAcceptance, deliveredAcceptance) {
+function evaluateOracleSensitivity(text, oracle) {
+  if (!oracle.expectations.length) {
+    return {
+      schema: "AcceptanceOracleSensitivityV1",
+      success: true,
+      total: 0,
+      detected_count: 0,
+      missed: [],
+      missed_details: [],
+      checks: []
+    };
+  }
+  const checks = buildCounterfactualChecks(text, oracle);
+  const missedChecks = checks.filter((check) => !check.detected);
+  return {
+    schema: "AcceptanceOracleSensitivityV1",
+    success: missedChecks.length === 0,
+    total: checks.length,
+    detected_count: checks.length - missedChecks.length,
+    missed: missedChecks.map((check) => check.label),
+    missed_details: missedChecks,
+    checks
+  };
+}
+
+function buildAcceptanceReceipt(oracle, sourceAcceptance, deliveredAcceptance, sourceSensitivity, deliveredSensitivity) {
   return {
     schema: "ContextPackAcceptanceOracleV1",
     enabled: oracle.expectations.length > 0,
     type: oracle.type,
     expectations: oracle.expectations,
     source: summarizeAcceptanceResult(sourceAcceptance),
-    delivered: summarizeAcceptanceResult(deliveredAcceptance)
+    delivered: summarizeAcceptanceResult(deliveredAcceptance),
+    sensitivity: {
+      source: summarizeSensitivityResult(sourceSensitivity),
+      delivered: summarizeSensitivityResult(deliveredSensitivity)
+    }
   };
 }
 
@@ -362,11 +436,31 @@ function summarizeAcceptanceResult(result) {
   };
 }
 
+function summarizeSensitivityResult(result) {
+  return {
+    success: result.success,
+    total: result.total,
+    detected_count: result.detected_count,
+    missed: result.missed,
+    missed_details: result.missed_details
+  };
+}
+
 function formatAcceptanceOracleStatus(acceptanceOracle) {
   if (!acceptanceOracle?.enabled) return "nicht gesetzt";
   const delivered = acceptanceOracle.delivered;
-  if (delivered.success) {
-    return `bestanden (${delivered.matched_count}/${delivered.total})`;
+  const deliveredSensitivity = acceptanceOracle.sensitivity?.delivered;
+  const sourceSensitivity = acceptanceOracle.sensitivity?.source;
+  const sensitivityFailed = deliveredSensitivity?.success === false || sourceSensitivity?.success === false;
+  if (delivered.success && !sensitivityFailed) {
+    return `bestanden und sensitiv (${delivered.matched_count}/${delivered.total})`;
+  }
+  if (delivered.success && sensitivityFailed) {
+    const missed = [
+      ...(sourceSensitivity?.success === false ? sourceSensitivity.missed || [] : []),
+      ...(deliveredSensitivity?.success === false ? deliveredSensitivity.missed || [] : [])
+    ];
+    return `bestanden, aber nicht sensitiv (${delivered.matched_count}/${delivered.total}), unscharf: ${[...new Set(missed)].join(", ")}`;
   }
   return `fehlgeschlagen (${delivered.matched_count}/${delivered.total}), fehlt: ${delivered.missing.join(", ")}`;
 }

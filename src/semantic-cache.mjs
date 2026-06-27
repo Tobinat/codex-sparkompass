@@ -506,6 +506,12 @@ function verifyReceipt(receipt) {
   if (receipt?.acceptance_oracle?.enabled && !receipt.acceptance_oracle?.delivered?.success) {
     reasons.push("acceptance-oracle-not-satisfied");
   }
+  if (receipt?.acceptance_oracle?.enabled && !receipt.acceptance_oracle?.sensitivity?.source?.success) {
+    reasons.push("acceptance-oracle-source-insensitive");
+  }
+  if (receipt?.acceptance_oracle?.enabled && !receipt.acceptance_oracle?.sensitivity?.delivered?.success) {
+    reasons.push("acceptance-oracle-delivered-insensitive");
+  }
   if (!["verified-publishable", "verified-expanded-context", "fallback-full-context"].includes(receipt?.gate?.status)) {
     reasons.push(`unsupported-gate:${receipt?.gate?.status || "missing"}`);
   }

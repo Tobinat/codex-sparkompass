@@ -202,8 +202,17 @@ function verifyReceiptInvariants(receipt) {
     buildCheck("quality-not-risky", receipt.quality?.risky === false, {
       reason: receipt.quality?.risky === false ? "" : "risky-context-pack"
     }),
+    buildCheck("acceptance-oracle-source", !receipt.acceptance_oracle?.enabled || receipt.acceptance_oracle?.source?.success === true, {
+      reason: !receipt.acceptance_oracle?.enabled || receipt.acceptance_oracle?.source?.success === true ? "" : "acceptance-oracle-source-failed"
+    }),
     buildCheck("acceptance-oracle-delivered", !receipt.acceptance_oracle?.enabled || receipt.acceptance_oracle?.delivered?.success === true, {
       reason: !receipt.acceptance_oracle?.enabled || receipt.acceptance_oracle?.delivered?.success === true ? "" : "acceptance-oracle-delivered-failed"
+    }),
+    buildCheck("acceptance-oracle-source-sensitivity", !receipt.acceptance_oracle?.enabled || receipt.acceptance_oracle?.sensitivity?.source?.success === true, {
+      reason: !receipt.acceptance_oracle?.enabled || receipt.acceptance_oracle?.sensitivity?.source?.success === true ? "" : "acceptance-oracle-source-insensitive"
+    }),
+    buildCheck("acceptance-oracle-delivered-sensitivity", !receipt.acceptance_oracle?.enabled || receipt.acceptance_oracle?.sensitivity?.delivered?.success === true, {
+      reason: !receipt.acceptance_oracle?.enabled || receipt.acceptance_oracle?.sensitivity?.delivered?.success === true ? "" : "acceptance-oracle-delivered-insensitive"
     })
   ];
 }

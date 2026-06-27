@@ -13,7 +13,23 @@ const EXPECTED_FAILURE_CLASSES = new Set([
   "same-symbols",
   "security-dataflow",
   "dynamic-import",
-  "monorepo-dependency"
+  "monorepo-dependency",
+  "environment-url-permission",
+  "numeric-budget-unit",
+  "boolean-policy-mode",
+  "diff-polarity",
+  "precedence-order",
+  "temporal-window",
+  "api-contract",
+  "data-migration-contract",
+  "idempotency-concurrency",
+  "locale-encoding",
+  "auth-scope-contract",
+  "crypto-signature-contract",
+  "money-currency-contract",
+  "destructive-operation",
+  "pattern-contract",
+  "web-security-header"
 ]);
 
 describe("Sparkompass benchmark", () => {
@@ -24,8 +40,8 @@ describe("Sparkompass benchmark", () => {
     assert.equal(benchmark.totals.regressions, 0);
     assert.equal(benchmark.totals.context_successes, benchmark.totals.cases);
     assert.equal(benchmark.totals.task_outcomes_verified, benchmark.totals.cases);
-    assert.equal(benchmark.totals.failure_corpus_cases, 7);
-    assert.equal(benchmark.totals.failure_corpus_successes, 7);
+    assert.equal(benchmark.totals.failure_corpus_cases, 23);
+    assert.equal(benchmark.totals.failure_corpus_successes, 23);
     assert.equal(benchmark.totals.failure_corpus_coverage.schema, "FailureCorpusCoverageV1");
     assert.equal(benchmark.totals.failure_corpus_coverage.verified, true);
     assert.equal(benchmark.totals.failure_corpus_coverage.coverage_percent, 100);
@@ -86,10 +102,10 @@ describe("Sparkompass benchmark", () => {
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /Sparkompass Benchmark/);
-    assert.match(result.stdout, /TaskOutcome-Erfolge: 10\/10/);
-    assert.match(result.stdout, /Failure-Corpus-Erfolge: 7\/7/);
-    assert.match(result.stdout, /Failure-Corpus-Klassen: 7\/7 verifiziert/);
-    assert.match(result.stdout, /ContextPack-Qualität: 10\/10 verifiziert/);
+    assert.match(result.stdout, /TaskOutcome-Erfolge: 26\/26/);
+    assert.match(result.stdout, /Failure-Corpus-Erfolge: 23\/23/);
+    assert.match(result.stdout, /Failure-Corpus-Klassen: 23\/23 verifiziert/);
+    assert.match(result.stdout, /ContextPack-Qualität: 26\/26 verifiziert/);
     assert.match(result.stdout, /Effizienz:/);
     assert.match(result.stdout, /Gegenfakten erkannt/);
     assert.match(result.stdout, /Schlechtester Einzelfall/);
@@ -102,8 +118,8 @@ describe("Sparkompass benchmark", () => {
     const benchmark = await runBenchmark(root);
 
     assert.equal(benchmark.totals.verified, true);
-    assert.equal(benchmark.totals.cases, 10);
-    assert.equal(benchmark.totals.failure_corpus_successes, 7);
+    assert.equal(benchmark.totals.cases, 26);
+    assert.equal(benchmark.totals.failure_corpus_successes, 23);
     assert.equal(benchmark.totals.failure_corpus_coverage.verified, true);
     assert.equal(benchmark.totals.context_pack_quality.verified, true);
     assert.equal(benchmark.totals.efficiency.verified, true);

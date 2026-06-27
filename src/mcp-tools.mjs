@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { buildContextDelta, lookupContext, writeContextCache } from "./context-cache.mjs";
 import { buildContextBOM } from "./context-bom.mjs";
-import { calibrateContext } from "./context-calibration.mjs";
+import { buildCalibratedContextPack, calibrateContext } from "./context-calibration.mjs";
 import { buildContextAblationAudit } from "./context-ablation.mjs";
 import { buildContextSlimmingPlan } from "./context-slimming.mjs";
 import { buildContextControlReport } from "./context-control.mjs";
@@ -398,7 +398,7 @@ export const MCP_TOOLS = [
   },
   {
     name: "sparkompass_handoff_ledger",
-    description: "Append a ContextHandoffReceiptV1 to ContextHandoffLedgerV1 or report estimated start-context savings across handoffs.",
+    description: "Append a ContextHandoffReceiptV1 to ContextHandoffLedgerV1 or report estimated and quality-gated positive start-context savings across handoffs.",
     inputSchema: {
       type: "object",
       properties: {
@@ -721,7 +721,7 @@ export const MCP_TOOLS = [
   },
   {
     name: "sparkompass_prepare_prompt",
-    description: "Prepare a sendable compact prompt with ContextPack receipt, quality gate, and visible savings before a Codex handoff.",
+    description: "Prepare a sendable compact prompt with ContextPack receipt, optional auto-target calibration, quality gate, and visible savings before a Codex handoff.",
     inputSchema: {
       type: "object",
       properties: {
@@ -731,6 +731,10 @@ export const MCP_TOOLS = [
         hookPayload: { type: "boolean", default: false, description: "When true, parse text/file as Codex hook payload and extract user prompt fields." },
         goal: { type: "string", description: "Optional goal to place at the top of the sendable prompt." },
         targetPercent: { type: "integer", minimum: 1, maximum: 95, default: 35 },
+        autoTarget: { type: "boolean", default: false, description: "Calibrate first and choose the smallest directly verified target before preparing the prompt." },
+        autoMinTargetPercent: { type: "integer", minimum: 1, maximum: 95, default: 10 },
+        autoMaxTargetPercent: { type: "integer", minimum: 1, maximum: 95, default: 90 },
+        autoStepPercent: { type: "integer", minimum: 1, maximum: 25, default: 5 },
         riskProfile: { type: "string", enum: ["compact", "balanced", "careful", "strict"], default: "balanced" },
         keep: { type: "array", items: { type: "string" }, default: [] },
         expect: { type: "array", items: { type: "string" }, default: [] },
@@ -935,7 +939,7 @@ export const MCP_TOOLS = [
   },
   {
     name: "sparkompass_pack",
-    description: "Create a verified ContextPackReceiptV1 from text or a local file, with expand-before-full fallback on uncertainty.",
+    description: "Create a verified ContextPackReceiptV1 from text or a local file, with optional auto-target calibration and expand-before-full fallback on uncertainty.",
     inputSchema: {
       type: "object",
       properties: {
@@ -945,6 +949,10 @@ export const MCP_TOOLS = [
         label: { type: "string" },
         riskProfile: { type: "string", enum: ["compact", "balanced", "careful", "strict"], default: "balanced" },
         targetPercent: { type: "integer", minimum: 1, maximum: 95, default: 35 },
+        autoTarget: { type: "boolean", default: false, description: "Calibrate first and choose the smallest directly verified target before building the ContextPack." },
+        autoMinTargetPercent: { type: "integer", minimum: 1, maximum: 95, default: 10 },
+        autoMaxTargetPercent: { type: "integer", minimum: 1, maximum: 95, default: 90 },
+        autoStepPercent: { type: "integer", minimum: 1, maximum: 25, default: 5 },
         mode: { type: "string", enum: ["auto", "extractive", "structural"], default: "auto" },
         keep: {
           type: "array",
@@ -1799,7 +1807,11 @@ async function preparePromptTool(args) {
     label: input.label,
     hookPayload: Boolean(args.hookPayload),
     goal: args.goal || "",
-    targetPercent: clampInteger(args.targetPercent, 35, 1, 95),
+    autoTarget: Boolean(args.autoTarget),
+    targetPercent: args.autoTarget ? undefined : clampInteger(args.targetPercent, 35, 1, 95),
+    autoMinTargetPercent: clampInteger(args.autoMinTargetPercent, 10, 1, 95),
+    autoMaxTargetPercent: clampInteger(args.autoMaxTargetPercent, 90, 1, 95),
+    autoStepPercent: clampInteger(args.autoStepPercent, 5, 1, 25),
     riskProfile: args.riskProfile || "balanced",
     keep: Array.isArray(args.keep) ? args.keep : [],
     expect: Array.isArray(args.expect) ? args.expect : [],
@@ -2009,15 +2021,21 @@ async function deltaTool(args) {
 async function packTool(args) {
   const root = resolveRoot(args.rootPath);
   const { text, label } = await readPackInput(root, args);
-  const pack = buildContextPack(text, {
+  const packOptions = {
     label,
-    targetPercent: clampInteger(args.targetPercent, 35, 1, 95),
+    targetPercent: args.autoTarget ? undefined : clampInteger(args.targetPercent, 35, 1, 95),
+    autoMinTargetPercent: clampInteger(args.autoMinTargetPercent, 10, 1, 95),
+    autoMaxTargetPercent: clampInteger(args.autoMaxTargetPercent, 90, 1, 95),
+    autoStepPercent: clampInteger(args.autoStepPercent, 5, 1, 25),
     riskProfile: args.riskProfile || "balanced",
     mode: args.mode || "auto",
     keep: Array.isArray(args.keep) ? args.keep : [],
     expect: Array.isArray(args.expect) ? args.expect : [],
     expectRegex: Array.isArray(args.expectRegex) ? args.expectRegex : []
-  });
+  };
+  const pack = args.autoTarget
+    ? buildCalibratedContextPack(text, packOptions)
+    : buildContextPack(text, packOptions);
 
   const result = {
     schema: "SparkompassPackToolResultV1",
@@ -2026,6 +2044,7 @@ async function packTool(args) {
     sourceHash: pack.sourceHash,
     fallbackUsed: pack.fallbackUsed,
     fallbackReasons: pack.fallbackReasons,
+    autoTarget: pack.autoTarget || null,
     receipt: pack.receipt,
     context: {
       mode: pack.context.mode,

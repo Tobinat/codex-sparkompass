@@ -1,5 +1,34 @@
 # Changelog
 
+## v0.1.0-alpha.1
+
+Release Candidate für klarere Token-Ersparnis mit stärkerem Qualitätsnachweis.
+
+### Verbessert
+
+- Neuer Failure-Corpus-Fall `web-security-header` für `Set-Cookie`, `HttpOnly`, `Secure`, `SameSite`, CORS-Origin, CSP-Nonce, `frame-ancestors` und CSRF-Verträge.
+- Neue kritische Ankerklasse `web-security-header`, damit Security-Header und Cookie-Regeln nicht von einem guten Gesamtwert verdeckt werden.
+- Benchmark erweitert auf `26` Fälle und `23/23` Failure-Corpus-Klassen.
+- Gegenfakten-Prüfung erweitert auf `169/169` erkannte Gegenfakten.
+- `release-audit` prüft nun GitHub-README, Evidence-Seite, aktuelle Release Notes, Changelog und Publishing-Runbook gegen die belegten Spar- und Qualitätszahlen.
+- README, Evidenzseite, Release-Checklist und Einsparungsdiagramm auf denselben Messstand gebracht.
+- Versionen in Paket, Lockfile und Plugin-Manifest auf `0.1.0-alpha.1` synchronisiert.
+
+### Aktueller Belegstand
+
+- Lokaler Codex A/B-Beleg: `8.417` Tokens gespart, `21%` Gesamt-Ersparnis.
+- Nicht gecachter Input im A/B-Beleg: `16.051` Tokens gespart, `42%`.
+- Benchmark: `52%` durchschnittliche Ersparnis, `0` Regressionen, `26/26` TaskOutcome-Erfolge.
+- GitHub-Claims-Audit: `verified-github-release-claims`.
+- Kritische Anker: `100%` im Benchmark und Dogfood.
+
+### Einschränkungen
+
+- Weiterhin Technical Preview, keine Stable-Version.
+- Noch nicht offiziell in Codex integriert.
+- Der Hook gibt lokale Empfehlungen, verändert aber keinen internen Codex-Request.
+- Tokenwerte bleiben lokale Messwerte oder lokale Usage-Belege, keine Abrechnung.
+
 ## v0.1.0-alpha.0
 
 Technical Preview für GitHub.

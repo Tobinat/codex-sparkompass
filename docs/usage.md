@@ -14,6 +14,8 @@ Sparkompass spart nicht durch blindes Kürzen. Der normale Ablauf ist:
 
 Tokenwerte sind lokale Schätzungen oder lokale Codex-Usage-Belege, keine offizielle Abrechnung.
 
+TaskOutcome-Orakel sind bewusst streng: Wenn `--expect-output-regex` zwar einen Treffer findet, eine testweise entfernte Stelle aber nicht als Verlust erkannt wird, meldet Sparkompass `output-oracle-insensitive` statt den Task als qualitätsgesichert zu zählen.
+
 ## Repository prüfen
 
 ```bash
@@ -80,12 +82,25 @@ Für belastbare Übergaben:
 ```bash
 sparkompass pack \
   --file "debug.log" \
-  --target 35 \
+  --target auto \
   --keep "AUTH_RESET_TOKEN_EXPIRED" \
   --expect "Auth reset test passes"
 ```
 
-`pack` erzeugt ein Receipt. Wenn die kompakte Fassung wichtige Fakten verliert, erweitert Sparkompass oder liefert Vollkontext.
+`pack --target auto` kalibriert zuerst die kleinste direkt verifizierte Zielgröße. Als `verified-auto-target` gilt die Auswahl nur mit explizitem `--expect` oder `--expect-regex`, damit ein bestandenes Oracle den kleineren Kontext belegt. Zusätzlich muss das Oracle sensitiv sein: Sparkompass entfernt erwartete Fakten testweise und prüft, ob das Oracle diesen Verlust bemerkt. Zu breite Erwartungen wie `--expect-regex "DEBUG"` können deshalb `oracle_gate: oracle-insensitive` melden. Ohne Oracle nutzt Sparkompass die normale Profil-Baseline, meldet `oracle_gate: oracle-required` und zählt mögliche Zusatzersparnis nicht als qualitätsgesichert. Das Ergebnis enthält `ContextAutoTargetV1`: getestete Zielgrößen, gewähltes Ziel, Baseline-Gate, Qualitätsvertrag, `oracle_gate`, `savings_gate` und geschätzte Zusatzersparnis gegenüber dem normalen Profilziel.
+
+Für feste Zielgrößen bleibt `--target 35` möglich. Wenn die kompakte Fassung wichtige Fakten verliert, erweitert Sparkompass oder liefert Vollkontext.
+
+Nur kalibrieren, ohne direkt ein Pack zu bauen:
+
+```bash
+sparkompass calibrate \
+  --file "debug.log" \
+  --keep "AUTH_RESET_TOKEN_EXPIRED" \
+  --expect "Auth reset test passes"
+```
+
+Auch `calibrate` braucht ein explizites und sensitives Oracle, wenn die gefundene Zielgröße als `verified-calibration` gelten soll. Ohne `--expect` oder `--expect-regex` zeigt es nur einen kompakten Diagnose-Kandidaten und meldet `calibration-needs-oracle`; bei zu breiten Erwartungen meldet es `oracle-insensitive`.
 
 Receipts nachträglich prüfen:
 
@@ -94,6 +109,21 @@ sparkompass receipt verify --receipt "pack.json" --file "debug.log"
 sparkompass receipt lint --receipt "pack.json"
 sparkompass contextpack verify . --context-pack-id "ctx-..."
 ```
+
+## Große Prompts sendbar vorbereiten
+
+Wenn der Rohtext direkt als Codex-Prompt gedacht ist, ist `prompt-prepare` näher am echten Nutzen als `pack`, weil es den tatsächlich sendbaren Prompt inklusive Metadaten misst:
+
+```bash
+sparkompass prompt-prepare \
+  --file "großer-prompt.txt" \
+  --target auto \
+  --keep "AUTH_RESET_TOKEN_EXPIRED" \
+  --expect "AUTH_RESET_TOKEN_EXPIRED" \
+  --goal "Auth-Reset reparieren"
+```
+
+Das Ergebnis enthält den kompakten Sendeprompt, das ContextPack-Gate, `ContextAutoTargetV1`, Hashes, Akzeptanz-Orakel und zwei Sparbalken: gelieferter Kontext und tatsächlich sendbarer Prompt.
 
 ## Logs und Tool-Ausgaben
 
@@ -117,6 +147,7 @@ sparkompass impact .
 ```
 
 So entsteht eine Spur aus Einsparung, Qualitätsgate und Task-Ergebnis.
+`impact` trennt dabei Brutto-Ersparnis, sicher verifizierte Einträge und qualitätsgegatede positive Ersparnis. Für öffentliche Belege sollten nur die qualitätsgegateden positiven Werte als belastbare Nutzerwirkung gelesen werden, weil review-pflichtige Packs, sichere Null-Ersparnis-Fälle, Handoffs ohne Startkontext-Gewinn oder Prompt-Vorbereitungen ohne sendbaren Gewinn dort nicht mitzählen.
 
 ## Offizielle Codex-Usage auswerten
 
@@ -171,7 +202,7 @@ SPARKOMPASS_TOOL_PROFILE=standard sparkompass-mcp
 sparkompass doctor overhead . --profile standard
 ```
 
-Das Profil `standard` reduziert in diesem Repo die sichtbaren MCP-Tools von `48` auf `20` und spart lokal geschätzt ca. `11.716` Katalog-Tokens gegenüber dem Vollprofil. Das ist eine Planungszahl, keine Abrechnung.
+Das Profil `standard` reduziert in diesem Repo die sichtbaren MCP-Tools von `48` auf `20` und spart lokal geschätzt ca. `11.721` Katalog-Tokens gegenüber dem Vollprofil. Das ist eine Planungszahl, keine Abrechnung.
 
 ## Release-Prüfung
 

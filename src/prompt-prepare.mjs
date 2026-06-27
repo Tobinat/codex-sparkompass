@@ -1,3 +1,4 @@
+import { buildCalibratedContextPack } from "./context-calibration.mjs";
 import { buildContextPack } from "./context-pack.mjs";
 import { buildPromptAdvisory, extractPromptText, parsePayload } from "./prompt-advisory.mjs";
 import { calculateSavings, formatSavingsBar } from "./savings.mjs";
@@ -10,15 +11,21 @@ export function buildPromptPreparation(input, options = {}) {
     minTokens: options.minTokens,
     minLines: options.minLines
   });
-  const pack = buildContextPack(sourceText, {
+  const packOptions = {
     label: options.label || "prompt-preparation",
-    targetPercent: Number(options.targetPercent) || 35,
+    targetPercent: options.autoTarget ? undefined : Number(options.targetPercent) || 35,
+    autoMinTargetPercent: Number(options.autoMinTargetPercent) || 10,
+    autoMaxTargetPercent: Number(options.autoMaxTargetPercent) || 90,
+    autoStepPercent: Number(options.autoStepPercent) || 5,
     riskProfile: String(options.riskProfile || "balanced"),
     mode: String(options.mode || "auto"),
     keep: normalizeList(options.keep),
     expect: normalizeList(options.expect),
     expectRegex: normalizeList(options.expectRegex)
-  });
+  };
+  const pack = options.autoTarget
+    ? buildCalibratedContextPack(sourceText, packOptions)
+    : buildContextPack(sourceText, packOptions);
   const sendablePrompt = buildSendablePrompt(pack, {
     goal: options.goal || "",
     includeReceipt: Boolean(options.includeReceipt)
@@ -74,10 +81,11 @@ Gate: ${preparation.gate.status}
 - Advisory: ${preparation.advisory.status}, ${preparation.advisory.suggested.action}
 - ContextPack: ${preparation.context_pack.context_pack_id}
 - ContextPack-Gate: ${preparation.context_pack.gate_status}
+- Auto-Target: ${formatAutoTarget(preparation.context_pack.auto_target)}
 - Fallback: ${preparation.context_pack.fallback_used ? preparation.context_pack.fallback_mode : "nicht genutzt"}
 - Kritische Anker: ${preparation.context_pack.critical_anchors.retained}/${preparation.context_pack.critical_anchors.total} (${preparation.context_pack.critical_anchors.retention_percent}%)
 - Quellbeleg-Abdeckung: ${preparation.context_pack.source_evidence_coverage_percent}%
-- Akzeptanz-Orakel: ${preparation.context_pack.acceptance_oracle_success ? "bestanden" : "nicht bestanden"}
+  - Akzeptanz-Orakel: ${formatAcceptanceOracle(preparation.context_pack)}
 - Kontext-Sparbalken: ${preparation.savings.delivered_context.visible_bar}
 - Sendbarer Prompt: ${formatNumber(preparation.sendable_prompt.estimated_tokens)} Tokens, ${preparation.savings.sendable_prompt.visible_bar}
 - Hinweis: Diese Vorbereitung verändert den Codex-Prompt nicht automatisch.
@@ -123,6 +131,12 @@ function buildPreparationGate(pack, options = {}) {
   if (receipt.acceptance_oracle.enabled && !receipt.acceptance_oracle.delivered.success) {
     hardFailures.push("acceptance-oracle-failed");
   }
+  if (receipt.acceptance_oracle.enabled && !receipt.acceptance_oracle.sensitivity?.source?.success) {
+    hardFailures.push("acceptance-oracle-source-insensitive");
+  }
+  if (receipt.acceptance_oracle.enabled && !receipt.acceptance_oracle.sensitivity?.delivered?.success) {
+    hardFailures.push("acceptance-oracle-insensitive");
+  }
   if (receipt.critical_anchors.retention_percent < 100) hardFailures.push("critical-anchor-loss");
   if (Math.round(receipt.source_evidence.coverage * 100) < 100) hardFailures.push("source-evidence-gap");
   if (receipt.quality.risky) hardFailures.push("risky-compression");
@@ -159,10 +173,37 @@ function summarizePack(pack) {
     savings_percent: receipt.ersparnis_prozent,
     source_hash: receipt.source.hash,
     delivered_context_hash: receipt.delivered_context.hash,
+    auto_target: receipt.context_selection.auto_target || null,
     critical_anchors: receipt.critical_anchors,
     source_evidence_coverage_percent: Math.round(receipt.source_evidence.coverage * 100),
-    acceptance_oracle_success: receipt.acceptance_oracle.delivered.success
+    acceptance_oracle_success: receipt.acceptance_oracle.delivered.success,
+    acceptance_oracle_sensitivity_success: receipt.acceptance_oracle.sensitivity?.delivered?.success ?? null
   };
+}
+
+function formatAutoTarget(autoTarget) {
+  if (!autoTarget?.enabled) return "nicht genutzt";
+  const selected = autoTarget.selected_target_percent
+    ? `${autoTarget.selected_target_percent}%`
+    : "keine verifizierte Kompaktgröße";
+  const extra = Number.isFinite(autoTarget.additional_saved_tokens_vs_baseline)
+    && autoTarget.additional_saved_tokens_vs_baseline > 0
+    ? `, zusätzlich ca. ${formatNumber(autoTarget.additional_saved_tokens_vs_baseline)} Tokens`
+    : "";
+  const savingsGate = autoTarget.savings_gate
+    ? `, Savings-Gate ${autoTarget.savings_gate}`
+    : "";
+  const oracleGate = autoTarget.oracle_gate
+    ? `, Oracle-Gate ${autoTarget.oracle_gate}`
+    : "";
+  return `${autoTarget.status}, ${selected}${extra}${savingsGate}${oracleGate}`;
+}
+
+function formatAcceptanceOracle(contextPack) {
+  if (!contextPack.acceptance_oracle_success) return "nicht bestanden";
+  if (contextPack.acceptance_oracle_sensitivity_success === false) return "bestanden, aber nicht sensitiv";
+  if (contextPack.acceptance_oracle_sensitivity_success === true) return "bestanden und sensitiv";
+  return "bestanden";
 }
 
 function toDeliveredSavings(receipt) {

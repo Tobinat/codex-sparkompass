@@ -1,6 +1,6 @@
 # GitHub Publishing Runbook
 
-Dieses Runbook beschreibt den ersten öffentlichen GitHub-Release für Codex Sparkompass.
+Dieses Runbook beschreibt den öffentlichen GitHub-Release für Codex Sparkompass.
 
 ## Vorgeschlagener Repository-Name
 
@@ -31,7 +31,7 @@ git status --short
 Erwartet:
 
 - Tests grün
-- `release-audit`: `30/30`
+- `release-audit`: `31/31`
 - `package-audit`: `verified-package-dry-run`
 - `plugin-smoke`: `verified-plugin-install-smoke`
 - keine `.sparkompass/`, `node_modules/`, `.env` oder `*.tgz` im Commit
@@ -49,7 +49,7 @@ gh auth login
 
 ```bash
 git add -A
-git commit -m "Release v0.1.0-alpha.0"
+git commit -m "Release v0.1.0-alpha.1"
 gh repo create codex-sparkompass \
   --public \
   --source=. \
@@ -84,18 +84,18 @@ Das Gate muss `verified-plugin-install-smoke` melden und darin den Git-Marketpla
 ## GitHub Release erstellen
 
 ```bash
-git tag -a v0.1.0-alpha.0 -m "v0.1.0-alpha.0"
-git push origin v0.1.0-alpha.0
-gh release create v0.1.0-alpha.0 \
-  ./codex-sparkompass-0.1.0-alpha.0.tgz \
-  --title "Codex Sparkompass v0.1.0-alpha.0" \
-  --notes-file docs/releases/v0.1.0-alpha.0.md
+git tag -a v0.1.0-alpha.1 -m "v0.1.0-alpha.1"
+git push origin v0.1.0-alpha.1
+gh release create v0.1.0-alpha.1 \
+  ./codex-sparkompass-0.1.0-alpha.1.tgz \
+  --title "Codex Sparkompass v0.1.0-alpha.1" \
+  --notes-file docs/releases/v0.1.0-alpha.1.md
 ```
 
 Danach das lokale Tarball-Artefakt wieder entfernen:
 
 ```bash
-rm -f codex-sparkompass-0.1.0-alpha.0.tgz
+rm -f codex-sparkompass-0.1.0-alpha.1.tgz
 ```
 
 ## Optional: npm-Veröffentlichung vorbereiten

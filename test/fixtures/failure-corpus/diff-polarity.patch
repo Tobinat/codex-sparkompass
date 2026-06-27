@@ -1,0 +1,20 @@
+diff --git a/src/auth/guard.ts b/src/auth/guard.ts
+index 3b8e9a1..7c4d2f0 100644
+--- a/src/auth/guard.ts
++++ b/src/auth/guard.ts
+@@ -12,9 +12,9 @@ export function guardPolicy() {
+-  allow_admin=true
++  allow_admin=false
+-  delete_users=true
++  delete_users=false
+-  mode=full
++  mode=read-only
+   audit_required=true
+ }
+
+# Noise
+The patch note repeats general review guidance.
+The patch note repeats general review guidance.
+The patch note repeats general review guidance.
+The patch note repeats general review guidance.
+The patch note repeats general review guidance.

@@ -52,7 +52,8 @@ export function buildContextPackFormat() {
       "delivered_context.hash, compact_context.hash, and source.hash must be sha256-prefixed",
       "delivered token totals must match delivered_context.tokens",
       "fallback.used must match delivered_context.mode",
-      "enabled acceptance oracles must pass on delivered context"
+      "enabled acceptance oracles must pass on source and delivered context",
+      "enabled acceptance oracles must be sensitive to counterfactual removals on source and delivered context"
     ],
     json_schema: buildJsonSchema(),
     interoperability_notes: [
@@ -191,6 +192,23 @@ function buildJsonSchema() {
           entries: { type: "array" }
         }
       },
+      acceptance_oracle: {
+        type: "object",
+        required: ["enabled", "source", "delivered", "sensitivity"],
+        properties: {
+          enabled: { type: "boolean" },
+          source: { type: "object" },
+          delivered: { type: "object" },
+          sensitivity: {
+            type: "object",
+            required: ["source", "delivered"],
+            properties: {
+              source: { type: "object" },
+              delivered: { type: "object" }
+            }
+          }
+        }
+      },
       gate: {
         type: "object",
         required: ["status", "requirements"],
@@ -290,8 +308,17 @@ function buildFormatChecks(receipt) {
     buildCheck("attempts-do-not-embed-context", attempts.every((attempt) => !("compressed" in attempt) && !("text" in attempt)), {
       reason: attempts.every((attempt) => !("compressed" in attempt) && !("text" in attempt)) ? "" : "attempt-embeds-context"
     }),
+    buildCheck("acceptance-oracle-source", !receipt.acceptance_oracle?.enabled || receipt.acceptance_oracle?.source?.success === true, {
+      reason: !receipt.acceptance_oracle?.enabled || receipt.acceptance_oracle?.source?.success === true ? "" : "acceptance-oracle-source-failed"
+    }),
     buildCheck("acceptance-oracle-delivered", !receipt.acceptance_oracle?.enabled || receipt.acceptance_oracle?.delivered?.success === true, {
       reason: !receipt.acceptance_oracle?.enabled || receipt.acceptance_oracle?.delivered?.success === true ? "" : "acceptance-oracle-delivered-failed"
+    }),
+    buildCheck("acceptance-oracle-source-sensitivity", !receipt.acceptance_oracle?.enabled || receipt.acceptance_oracle?.sensitivity?.source?.success === true, {
+      reason: !receipt.acceptance_oracle?.enabled || receipt.acceptance_oracle?.sensitivity?.source?.success === true ? "" : "acceptance-oracle-source-insensitive"
+    }),
+    buildCheck("acceptance-oracle-delivered-sensitivity", !receipt.acceptance_oracle?.enabled || receipt.acceptance_oracle?.sensitivity?.delivered?.success === true, {
+      reason: !receipt.acceptance_oracle?.enabled || receipt.acceptance_oracle?.sensitivity?.delivered?.success === true ? "" : "acceptance-oracle-delivered-insensitive"
     }),
     buildCheck("gate-requirements-present", validateGateRequirements(receipt.gate?.requirements), {
       reason: validateGateRequirements(receipt.gate?.requirements) ? "" : "gate-requirement-missing"
@@ -313,6 +340,8 @@ function validateGateRequirements(requirements = {}) {
   return Number(requirements.critical_anchor_retention_percent) === 100
     && Number(requirements.source_evidence_coverage_percent) === 100
     && Number(requirements.risky_compressions) === 0
+    && (requirements.acceptance_oracle_success === true || requirements.acceptance_oracle_success === null)
+    && (requirements.acceptance_oracle_sensitivity === true || requirements.acceptance_oracle_sensitivity === null)
     && requirements.fallback_on_uncertainty === true
     && requirements.expand_before_full_context === true;
 }

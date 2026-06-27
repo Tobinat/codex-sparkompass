@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { describe, it } from "node:test";
 import { buildContextHandoffReceipt } from "../src/context-handoff.mjs";
-import { appendHandoffToLedger, buildHandoffLedgerReport, formatHandoffLedgerReport } from "../src/handoff-ledger.mjs";
+import { appendHandoffToLedger, buildHandoffLedger, buildHandoffLedgerReport, formatHandoffLedgerReport } from "../src/handoff-ledger.mjs";
 
 describe("ContextHandoffLedgerV1", () => {
   it("records verified handoff receipts and reports estimated start-context savings", async () => {
@@ -42,9 +42,60 @@ describe("ContextHandoffLedgerV1", () => {
     assert.equal(ledger.schema, "ContextHandoffLedgerV1");
     assert.equal(ledger.totals.entries, 2);
     assert.equal(ledger.totals.verified_handoffs, 2);
+    assert.equal(ledger.totals.quality_gated_handoff_saving_handoffs, 2);
     assert.ok(ledger.totals.start_context_saved_tokens > 0);
     assert.ok(ledger.totals.start_context_savings_percent > 0);
+    assert.equal(ledger.totals.verified_start_context_saved_tokens, ledger.totals.start_context_saved_tokens);
+    assert.equal(ledger.totals.quality_gated_start_context_saved_tokens, ledger.totals.start_context_saved_tokens);
     assert.ok(ledger.entries.every((entry) => entry.full_prompt_hash.startsWith("sha256:")));
+  });
+
+  it("separates gross start-context savings from verified handoff savings", () => {
+    const ledger = buildHandoffLedger([
+      buildHandoffEntry({
+        gateStatus: "verified-handoff",
+        inventoryTokens: 100,
+        startPromptTokens: 55
+      }),
+      buildHandoffEntry({
+        gateStatus: "handoff-needs-review",
+        inventoryTokens: 100,
+        startPromptTokens: 20
+      })
+    ]);
+
+    assert.equal(ledger.totals.entries, 2);
+    assert.equal(ledger.totals.verified_handoffs, 1);
+    assert.equal(ledger.totals.quality_gated_handoff_saving_handoffs, 1);
+    assert.equal(ledger.totals.needs_review_handoffs, 1);
+    assert.equal(ledger.totals.start_context_saved_tokens, 125);
+    assert.equal(ledger.totals.start_context_savings_percent, 63);
+    assert.equal(ledger.totals.verified_start_context_saved_tokens, 45);
+    assert.equal(ledger.totals.verified_start_context_savings_percent, 45);
+    assert.equal(ledger.totals.quality_gated_start_context_saved_tokens, 45);
+    assert.equal(ledger.totals.quality_gated_start_context_savings_percent, 45);
+    assert.match(formatHandoffLedgerReport(ledger), /Qualitätsgegatede Startkontext-Ersparnis/);
+  });
+
+  it("keeps zero-savings handoffs verified but out of quality-gated handoff savings", () => {
+    const ledger = buildHandoffLedger([
+      buildHandoffEntry({
+        gateStatus: "verified-handoff",
+        inventoryTokens: 100,
+        startPromptTokens: 100
+      })
+    ]);
+
+    assert.equal(ledger.totals.entries, 1);
+    assert.equal(ledger.totals.verified_handoffs, 1);
+    assert.equal(ledger.totals.quality_gated_handoff_saving_handoffs, 0);
+    assert.equal(ledger.totals.needs_review_handoffs, 0);
+    assert.equal(ledger.totals.verified_start_context_saved_tokens, 0);
+    assert.equal(ledger.totals.quality_gated_inventory_tokens, 0);
+    assert.equal(ledger.totals.quality_gated_start_prompt_tokens, 0);
+    assert.equal(ledger.totals.quality_gated_start_context_saved_tokens, 0);
+    assert.equal(ledger.totals.quality_gated_start_context_savings_percent, 0);
+    assert.match(formatHandoffLedgerReport(ledger), /Qualitätsgegatede sparende Handoffs: 0/);
   });
 
   it("formats a compact human report", async () => {
@@ -61,11 +112,20 @@ describe("ContextHandoffLedgerV1", () => {
       totals: {
         entries: 1,
         verified_handoffs: 1,
+        quality_gated_handoff_saving_handoffs: 1,
         needs_review_handoffs: 0,
         inventory_tokens: receipt.savings.inventory_tokens,
         start_prompt_tokens: receipt.savings.start_prompt_tokens,
         start_context_saved_tokens: receipt.savings.start_context_saved_tokens,
         start_context_savings_percent: receipt.savings.start_context_savings_percent,
+        verified_inventory_tokens: receipt.savings.inventory_tokens,
+        verified_start_prompt_tokens: receipt.savings.start_prompt_tokens,
+        verified_start_context_saved_tokens: receipt.savings.start_context_saved_tokens,
+        verified_start_context_savings_percent: receipt.savings.start_context_savings_percent,
+        quality_gated_inventory_tokens: receipt.savings.inventory_tokens,
+        quality_gated_start_prompt_tokens: receipt.savings.start_prompt_tokens,
+        quality_gated_start_context_saved_tokens: receipt.savings.start_context_saved_tokens,
+        quality_gated_start_context_savings_percent: receipt.savings.start_context_savings_percent,
         p95_start_prompt_tokens: receipt.savings.start_prompt_tokens,
         p95_saved_tokens: receipt.savings.start_context_saved_tokens,
         on_demand_evidence_count: receipt.quality_contract.on_demand_evidence_count,
@@ -136,5 +196,22 @@ describe("ContextHandoffLedgerV1", () => {
     assert.equal(ledger.schema, "ContextHandoffLedgerV1");
     assert.equal(ledger.totals.entries, 1);
     assert.equal(ledger.totals.verified_handoffs, 1);
+    assert.equal(ledger.totals.quality_gated_handoff_saving_handoffs, 1);
   });
 });
+
+function buildHandoffEntry({ gateStatus, inventoryTokens, startPromptTokens }) {
+  return {
+    schema: "ContextHandoffLedgerEntryV1",
+    entry_id: `${gateStatus}-${inventoryTokens}-${startPromptTokens}`,
+    goal: gateStatus,
+    gate_status: gateStatus,
+    blocking_warnings: gateStatus === "verified-handoff" ? [] : ["review-required"],
+    inventory_tokens: inventoryTokens,
+    start_prompt_tokens: startPromptTokens,
+    start_context_saved_tokens: Math.max(0, inventoryTokens - startPromptTokens),
+    start_context_savings_percent: Math.round(((inventoryTokens - startPromptTokens) / inventoryTokens) * 100),
+    on_demand_evidence_count: 0,
+    prompt_cache_status: "prefix-below-estimated-threshold"
+  };
+}

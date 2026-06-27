@@ -59,7 +59,7 @@ describe("PackageDryRunAuditV1", () => {
     assert.equal(audit.installed.package_name, "codex-sparkompass");
     assert.equal(audit.installed.cli_doctor_ok, true);
     assert.equal(audit.installed.benchmark_gate, "verified-benchmark");
-    assert.equal(audit.installed.benchmark_cases, 10);
+    assert.equal(audit.installed.benchmark_cases, 26);
     assert.ok(audit.installed.mcp_tool_count >= 41);
     assert.equal(audit.installed.mcp_required_tools_present, true);
     assert.ok(audit.checks.every((item) => item.status === "verified"));

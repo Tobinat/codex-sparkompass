@@ -5,6 +5,10 @@ import { calculateSavings, formatSavingsBar } from "./savings.mjs";
 import { formatNumber } from "./token-estimator.mjs";
 
 export const DEFAULT_PROMPT_PREPARATION_LEDGER_PATH = ".sparkompass/prompt-preparation-ledger.json";
+export const QUALITY_GATED_PROMPT_SAVING_GATE_STATUSES = new Set([
+  "verified-compact-prompt",
+  "verified-expanded-prompt"
+]);
 
 export async function appendPromptPreparationToLedger(rootPath, preparationInput, options = {}) {
   const root = path.resolve(rootPath || ".");
@@ -71,11 +75,27 @@ export function summarizePromptPreparationLedger(entries = []) {
   const sendableTokens = sum(entries, "sendable_prompt_tokens");
   const deliveredSavings = calculateSavings(inputTokens, deliveredTokens);
   const sendableSavings = calculateSavings(inputTokens, sendableTokens);
+  const qualityGatedPromptSavingEntries = entries.filter(isQualityGatedPromptSavingEntry);
+  const verifiedInputTokens = sum(qualityGatedPromptSavingEntries, "input_tokens");
+  const verifiedDeliveredTokens = sum(qualityGatedPromptSavingEntries, "delivered_context_tokens");
+  const verifiedSendableTokens = sum(qualityGatedPromptSavingEntries, "sendable_prompt_tokens");
+  const verifiedDeliveredSavings = calculateSavings(verifiedInputTokens, verifiedDeliveredTokens);
+  const verifiedSendableSavings = calculateSavings(verifiedInputTokens, verifiedSendableTokens);
   const fallbackCount = entries.filter((entry) => entry.fallback_used).length;
+  const autoTargetEntries = entries.filter((entry) => entry.auto_target_enabled).length;
+  const verifiedAutoTargetEntries = entries.filter((entry) => (
+    entry.auto_target_status === "verified-auto-target"
+      && entry.auto_target_oracle_gate === "verified-oracle"
+      && entry.auto_target_savings_gate === "verified-additional-saving"
+  )).length;
+  const verifiedAutoTargetOracleEntries = entries.filter((entry) => (
+    entry.auto_target_oracle_gate === "verified-oracle"
+  )).length;
 
   return {
     entries: entries.length,
     verified_preparations: entries.filter((entry) => entry.gate_verified).length,
+    quality_gated_prompt_saving_preparations: qualityGatedPromptSavingEntries.length,
     needs_review_preparations: entries.filter((entry) => !entry.gate_verified).length,
     input_tokens: inputTokens,
     delivered_context_tokens: deliveredTokens,
@@ -84,6 +104,13 @@ export function summarizePromptPreparationLedger(entries = []) {
     delivered_context_savings_percent: deliveredSavings.percent,
     sendable_prompt_saved_tokens: sendableSavings.savedTokens,
     sendable_prompt_savings_percent: sendableSavings.percent,
+    verified_input_tokens: verifiedInputTokens,
+    verified_delivered_context_tokens: verifiedDeliveredTokens,
+    verified_sendable_prompt_tokens: verifiedSendableTokens,
+    verified_delivered_context_saved_tokens: verifiedDeliveredSavings.savedTokens,
+    verified_delivered_context_savings_percent: verifiedDeliveredSavings.percent,
+    verified_sendable_prompt_saved_tokens: verifiedSendableSavings.savedTokens,
+    verified_sendable_prompt_savings_percent: verifiedSendableSavings.percent,
     p95_sendable_prompt_tokens: percentile(entries.map((entry) => entry.sendable_prompt_tokens), 95),
     p95_sendable_saved_tokens: percentile(entries.map((entry) => entry.sendable_prompt_saved_tokens), 95),
     minimum_critical_anchor_retention_percent: minimum(entries.map((entry) => entry.critical_anchor_retention_percent), 100),
@@ -92,7 +119,13 @@ export function summarizePromptPreparationLedger(entries = []) {
     fallback_rate_percent: entries.length ? Math.round((fallbackCount / entries.length) * 100) : 0,
     expanded_prompts: entries.filter((entry) => entry.fallback_mode === "expanded-context").length,
     full_context_fallbacks: entries.filter((entry) => entry.fallback_mode === "full-context").length,
-    blocked_preparations: entries.filter((entry) => entry.gate_reasons.length > 0).length
+    blocked_preparations: entries.filter((entry) => entry.gate_reasons.length > 0).length,
+    auto_target_entries: autoTargetEntries,
+    verified_auto_target_entries: verifiedAutoTargetEntries,
+    verified_auto_target_oracle_entries: verifiedAutoTargetOracleEntries,
+    auto_target_additional_saved_tokens: sum(entries, "auto_target_additional_saved_tokens"),
+    auto_target_savings_gate_failures: autoTargetEntries - verifiedAutoTargetEntries,
+    auto_target_oracle_gate_failures: autoTargetEntries - verifiedAutoTargetOracleEntries
   };
 }
 
@@ -109,6 +142,7 @@ Pfad: ${ledger.path || "nicht gespeichert"}
 
 - Einträge: ${formatNumber(totals.entries)}
 - Verifizierte Vorbereitungen: ${formatNumber(totals.verified_preparations)}
+- Qualitätsgegatede sparende Vorbereitungen: ${formatNumber(totals.quality_gated_prompt_saving_preparations)}
 - Review-pflichtige Vorbereitungen: ${formatNumber(totals.needs_review_preparations)}
 - Gelieferter ContextPack-Kontext: ${formatSavingsBar({
     originalTokens: totals.input_tokens,
@@ -122,12 +156,19 @@ Pfad: ${ledger.path || "nicht gespeichert"}
     savedTokens: totals.sendable_prompt_saved_tokens,
     percent: totals.sendable_prompt_savings_percent
   })}
+- Qualitätsgegateder sendbarer Prompt: ${formatSavingsBar({
+    originalTokens: totals.verified_input_tokens,
+    compactTokens: totals.verified_sendable_prompt_tokens,
+    savedTokens: totals.verified_sendable_prompt_saved_tokens,
+    percent: totals.verified_sendable_prompt_savings_percent
+  })}
 - p95 sendbare Prompt-Tokens: ${formatNumber(totals.p95_sendable_prompt_tokens)}
 - p95 gesparte sendbare Tokens: ${formatNumber(totals.p95_sendable_saved_tokens)}
 - Schlechteste kritische Anker-Erhaltung: ${totals.minimum_critical_anchor_retention_percent}%
 - Schlechteste Quellbeleg-Abdeckung: ${totals.minimum_source_evidence_coverage_percent}%
 - Fallback-Rate: ${totals.fallback_rate_percent}% (${formatNumber(totals.fallback_count)} von ${formatNumber(totals.entries)})
 - Blockierte Vorbereitungen: ${formatNumber(totals.blocked_preparations)}
+- Auto-Target: ${formatNumber(totals.verified_auto_target_entries)}/${formatNumber(totals.auto_target_entries)} verifiziert, Oracle ${formatNumber(totals.verified_auto_target_oracle_entries)}/${formatNumber(totals.auto_target_entries)}, zusätzlich ca. ${formatNumber(totals.auto_target_additional_saved_tokens)} Tokens
 
 ## Letzte Einträge
 
@@ -141,6 +182,7 @@ function promptPreparationToLedgerEntry(preparation, options = {}) {
   const sendable = preparation.sendable_prompt || {};
   const deliveredSavings = preparation.savings?.delivered_context || {};
   const sendableSavings = preparation.savings?.sendable_prompt || {};
+  const autoTarget = contextPack.auto_target || {};
   const seed = [
     contextPack.context_pack_id,
     input.source_hash,
@@ -186,6 +228,17 @@ function promptPreparationToLedgerEntry(preparation, options = {}) {
     critical_anchor_retention_percent: Number(contextPack.critical_anchors?.retention_percent) || 0,
     source_evidence_coverage_percent: Number(contextPack.source_evidence_coverage_percent) || 0,
     acceptance_oracle_success: Boolean(contextPack.acceptance_oracle_success),
+    acceptance_oracle_sensitivity_success: contextPack.acceptance_oracle_sensitivity_success === null
+      ? null
+      : Boolean(contextPack.acceptance_oracle_sensitivity_success),
+    auto_target_enabled: Boolean(autoTarget.enabled),
+    auto_target_status: autoTarget.status || "not-used",
+    auto_target_oracle_gate: autoTarget.oracle_gate || "not-used",
+    auto_target_explicit_oracle_present: Boolean(autoTarget.explicit_oracle_present),
+    auto_target_savings_gate: autoTarget.savings_gate || "not-used",
+    auto_target_baseline_target_percent: Number(autoTarget.baseline_target_percent) || 0,
+    auto_target_selected_target_percent: Number(autoTarget.selected_target_percent) || 0,
+    auto_target_additional_saved_tokens: Number(autoTarget.additional_saved_tokens_vs_baseline) || 0,
     sendable_prompt_hash: sendable.text ? `sha256:${sha256(sendable.text)}` : ""
   };
 }
@@ -223,6 +276,25 @@ function toSendableSavings(entry) {
     savedTokens: entry.sendable_prompt_saved_tokens,
     percent: entry.sendable_prompt_savings_percent
   };
+}
+
+export function isQualityGatedPromptSavingEntry(entry) {
+  if (!entry?.gate_verified) return false;
+  if (entry.fallback_mode === "full-context") return false;
+  if (entry.gate_status === "verified-full-context-fallback") return false;
+  if (!hasPositiveSendablePromptSavings(entry)) return false;
+  if (QUALITY_GATED_PROMPT_SAVING_GATE_STATUSES.has(entry.gate_status)) return true;
+  return !entry.gate_status || entry.gate_status === "unknown";
+}
+
+function hasPositiveSendablePromptSavings(entry) {
+  const inputTokens = Number(entry?.input_tokens);
+  const sendableTokens = Number(entry?.sendable_prompt_tokens);
+  const savedTokens = Number(entry?.sendable_prompt_saved_tokens);
+
+  if (!Number.isFinite(inputTokens) || inputTokens <= 0) return false;
+  if (Number.isFinite(sendableTokens) && sendableTokens >= 0 && sendableTokens < inputTokens) return true;
+  return Number.isFinite(savedTokens) && savedTokens > 0;
 }
 
 function sum(entries, field) {

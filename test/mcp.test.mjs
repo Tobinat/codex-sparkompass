@@ -133,6 +133,9 @@ describe("Sparkompass MCP tools", () => {
     const packTool = MCP_TOOLS.find((tool) => tool.name === "sparkompass_pack");
     assert.deepEqual(packTool.inputSchema.properties.riskProfile.enum, ["compact", "balanced", "careful", "strict"]);
     assert.equal(packTool.inputSchema.properties.expectRegex.type, "array");
+    assert.equal(packTool.inputSchema.properties.autoTarget.type, "boolean");
+    assert.equal(packTool.inputSchema.properties.autoMinTargetPercent.default, 10);
+    assert.equal(packTool.inputSchema.properties.autoStepPercent.maximum, 25);
     assert.equal(packTool.inputSchema.properties.storeInRegistry.type, "boolean");
     assert.equal(packTool.inputSchema.properties.registry.type, "string");
     const verifyReceiptTool = MCP_TOOLS.find((tool) => tool.name === "sparkompass_verify_receipt");
@@ -238,6 +241,8 @@ describe("Sparkompass MCP tools", () => {
     const preparePromptTool = MCP_TOOLS.find((tool) => tool.name === "sparkompass_prepare_prompt");
     assert.equal(preparePromptTool.inputSchema.properties.hookPayload.type, "boolean");
     assert.equal(preparePromptTool.inputSchema.properties.expect.type, "array");
+    assert.equal(preparePromptTool.inputSchema.properties.autoTarget.type, "boolean");
+    assert.equal(preparePromptTool.inputSchema.properties.autoMinTargetPercent.default, 10);
     assert.deepEqual(preparePromptTool.inputSchema.properties.riskProfile.enum, ["compact", "balanced", "careful", "strict"]);
     const promptPreparationLedgerTool = MCP_TOOLS.find((tool) => tool.name === "sparkompass_prompt_preparation_ledger");
     assert.deepEqual(promptPreparationLedgerTool.inputSchema.properties.action.enum, ["report", "add"]);
@@ -522,6 +527,7 @@ describe("Sparkompass MCP tools", () => {
     assert.equal(report.schema, "ContextHandoffLedgerV1");
     assert.equal(report.totals.entries, 1);
     assert.equal(report.totals.verified_handoffs, 1);
+    assert.equal(report.totals.quality_gated_handoff_saving_handoffs, 1);
   });
 
   it("builds a release scorecard through the MCP tool layer", async () => {
@@ -551,6 +557,7 @@ describe("Sparkompass MCP tools", () => {
     assert.equal(pilot.metrics.savings_entries, 1);
     assert.equal(pilot.metrics.verified_tasks, 1);
     assert.equal(pilot.metrics.verified_handoffs, 1);
+    assert.equal(pilot.metrics.quality_gated_handoff_saving_handoffs, 1);
     assert.equal(pilot.metrics.verified_prompt_preparations, 1);
     assert.match(pilot.ledger_paths.taskOutcome, /task-outcome-ledger\.json$/);
     assert.match(pilot.ledger_paths.promptPreparation, /prompt-preparation-ledger\.json$/);
@@ -694,7 +701,7 @@ describe("Sparkompass MCP tools", () => {
     assert.ok(audit.metrics.package_dry_run_files > 0);
     assert.equal(audit.metrics.package_install_smoke_status, "verified-package-install-smoke");
     assert.ok(audit.metrics.package_install_smoke_mcp_tools >= 41);
-    assert.equal(audit.metrics.package_install_smoke_benchmark_cases, 10);
+    assert.equal(audit.metrics.package_install_smoke_benchmark_cases, 26);
     assert.equal(audit.metrics.plugin_install_smoke_status, "verified-plugin-install-smoke");
     assert.ok(audit.metrics.plugin_install_smoke_mcp_tools >= 42);
     assert.equal(audit.metrics.plugin_install_smoke_tool_call_ok, true);
@@ -712,6 +719,8 @@ describe("Sparkompass MCP tools", () => {
     assert.equal(audit.metrics.semantic_cache_tool_fingerprint_status, "verified-semantic-cache-tool-fingerprint");
     assert.equal(audit.metrics.semantic_cache_registry_contract_status, "verified-semantic-cache-registry-contract");
     assert.equal(audit.metrics.prompt_preparation_status, "verified-prompt-preparation");
+    assert.equal(audit.metrics.github_release_claims_status, "verified-github-release-claims");
+    assert.equal(audit.metrics.github_release_claims_failed, 0);
     assert.equal(audit.artifacts.package_dry_run.schema, "PackageDryRunAuditV1");
     assert.equal(audit.artifacts.package_dry_run.verified, true);
     assert.equal(audit.artifacts.package_install_smoke.schema, "PackageInstallSmokeAuditV1");
@@ -726,6 +735,7 @@ describe("Sparkompass MCP tools", () => {
     assert.ok(audit.requirements.some((item) => item.id === "open-contextpack-format" && item.status === "verified"));
     assert.ok(audit.requirements.some((item) => item.id === "user-impact-report" && item.status === "verified"));
     assert.ok(audit.requirements.some((item) => item.id === "fallback-on-uncertainty" && item.status === "verified"));
+    assert.ok(audit.requirements.some((item) => item.id === "github-release-claims" && item.status === "verified"));
     assert.ok(audit.requirements.some((item) => item.id === "package-dry-run" && item.status === "verified"));
     assert.ok(audit.requirements.some((item) => item.id === "package-install-smoke" && item.status === "verified"));
     assert.ok(audit.requirements.some((item) => item.id === "plugin-install-smoke" && item.status === "verified"));
@@ -805,12 +815,18 @@ describe("Sparkompass MCP tools", () => {
     const preparation = await callMcpTool("sparkompass_prepare_prompt", {
       text,
       goal: "Auth-Reset reparieren",
+      autoTarget: true,
       expect: ["AUTH_RESET_TOKEN_EXPIRED"],
       keep: ["AUTH_RESET_TOKEN_EXPIRED"]
     });
 
     assert.equal(preparation.schema, "SparkompassPromptPreparationV1");
     assert.equal(preparation.gate.verified, true);
+    assert.equal(preparation.context_pack.auto_target.status, "verified-auto-target");
+    assert.equal(preparation.context_pack.auto_target.oracle_gate, "verified-oracle");
+    assert.equal(preparation.context_pack.auto_target.selected_target_percent, 10);
+    assert.equal(preparation.context_pack.auto_target.savings_gate, "verified-additional-saving");
+    assert.equal(preparation.context_pack.auto_target.selected_not_more_tokens_than_baseline, true);
     assert.match(preparation.sendable_prompt.text, /ContextPack: ctx-/);
     assert.match(preparation.sendable_prompt.text, /AUTH_RESET_TOKEN_EXPIRED/);
     assert.doesNotMatch(preparation.sendable_prompt.text, /Hintergrundnotiz 79/);
@@ -999,6 +1015,33 @@ describe("Sparkompass MCP tools", () => {
     assert.match(pack.context.text, /AUTH_RESET_TOKEN_EXPIRED/);
   });
 
+  it("auto-calibrates ContextPack target through the MCP tool layer", async () => {
+    const source = [
+      "ERROR AUTH_RESET_TOKEN_EXPIRED in src/auth/session.ts",
+      ...Array.from({ length: 80 }, (_, index) => (
+        `debug noise ${index} repeated filler text that can disappear safely`
+      )),
+      "Done when: Auth reset test passes"
+    ].join("\n");
+    const pack = await callMcpTool("sparkompass_pack", {
+      text: source,
+      autoTarget: true,
+      keep: ["AUTH_RESET_TOKEN_EXPIRED", "src/auth/session.ts"],
+      expect: ["AUTH_RESET_TOKEN_EXPIRED"],
+      expectRegex: ["src/auth/session\\.ts"],
+      includeContext: true
+    });
+
+    assert.equal(pack.autoTarget.status, "verified-auto-target");
+    assert.equal(pack.autoTarget.oracle_gate, "verified-oracle");
+    assert.equal(pack.receipt.context_selection.auto_target.selected_target_percent, 10);
+    assert.equal(pack.receipt.context_selection.auto_target.savings_gate, "verified-additional-saving");
+    assert.equal(pack.receipt.context_selection.auto_target.selected_not_more_tokens_than_baseline, true);
+    assert.ok(pack.receipt.context_selection.auto_target.additional_saved_tokens_vs_baseline > 0);
+    assert.equal(pack.receipt.gate.status, "verified-publishable");
+    assert.equal(pack.receipt.acceptance_oracle.delivered.success, true);
+  });
+
   it("verifies a ContextPack receipt through the MCP tool layer", async () => {
     const text = "ERROR AUTH_RESET_TOKEN_EXPIRED in src/auth/session.ts\nDone when: Auth reset test passes.";
     const pack = await callMcpTool("sparkompass_pack", {
@@ -1135,7 +1178,10 @@ describe("Sparkompass MCP tools", () => {
     });
 
     assert.equal(calibration.schema, "ContextCalibrationV1");
+    assert.equal(calibration.status, "verified-calibration");
     assert.equal(calibration.verified, true);
+    assert.equal(calibration.oracle_gate, "verified-oracle");
+    assert.equal(calibration.explicit_oracle_present, true);
     assert.equal(calibration.policy.risk_profile, "strict");
     assert.equal(calibration.selected.effective_target_percent, 50);
     assert.equal(calibration.selected.acceptance_oracle_success, true);

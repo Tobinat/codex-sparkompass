@@ -55,9 +55,9 @@ describe("SparkompassScorecardV1", () => {
 
     assert.match(report, /SparkompassScorecardV1/);
     assert.match(report, /Gate: verified-scorecard/);
-    assert.match(report, /TaskOutcome 10\/10/);
-    assert.match(report, /Failure-Corpus-Klassen: 7\/7 verifiziert/);
-    assert.match(report, /ContextPack-Qualität: 10\/10 verifiziert/);
+    assert.match(report, /TaskOutcome 26\/26/);
+    assert.match(report, /Failure-Corpus-Klassen: 23\/23 verifiziert/);
+    assert.match(report, /ContextPack-Qualität: 26\/26 verifiziert/);
     assert.match(report, /Benchmark-Effizienz:/);
     assert.match(report, /SavingsLedger/);
     assert.match(report, /TaskOutcomeLedger/);
@@ -75,8 +75,19 @@ describe("SparkompassScorecardV1", () => {
       outputText: "FAIL\n",
       expectOutput: ["TASK_OK"]
     });
+    const insensitiveReview = await recordTaskOutcome({
+      rootPath: root,
+      command: "npm test",
+      exitCode: 0,
+      outputText: "PASS a\nTASK_OK first\nPASS b\nTASK_OK second\n",
+      expectOutputRegex: ["TASK_OK"]
+    });
 
     await appendTaskOutcomeToLedger(".", review, {
+      out: ledgerPath,
+      runType: "scorecard-test"
+    });
+    await appendTaskOutcomeToLedger(".", insensitiveReview, {
       out: ledgerPath,
       runType: "scorecard-test"
     });
@@ -85,14 +96,16 @@ describe("SparkompassScorecardV1", () => {
       taskOutcomeLedger: ledgerPath
     });
 
-    assert.equal(scorecard.metrics.task_outcome_ledger.entries, 1);
+    assert.equal(scorecard.metrics.task_outcome_ledger.entries, 2);
     assert.equal(scorecard.metrics.task_outcome_ledger.verified_tasks, 0);
     assert.equal(scorecard.metrics.task_outcome_ledger.review_rate_percent, 100);
     assert.ok(scorecard.release_readiness.warnings.includes("task-outcome-ledger-no-verified-tasks"));
     assert.ok(scorecard.release_readiness.warnings.includes("task-outcome-ledger-review-tasks"));
     assert.ok(scorecard.release_readiness.warnings.includes("task-outcome-ledger-output-oracle-failures"));
+    assert.ok(scorecard.release_readiness.warnings.includes("task-outcome-ledger-output-oracle-sensitivity-failures"));
     assert.deepEqual(scorecard.metrics.task_outcome_ledger.review_reasons, [
       { reason: "exit-code-mismatch:1!=0", count: 1 },
+      { reason: "output-oracle-insensitive:/TASK_OK/", count: 1 },
       { reason: "output-oracle-missing:TASK_OK", count: 1 }
     ]);
   });

@@ -69,15 +69,32 @@ export function summarizeHandoffLedger(entries = []) {
   const inventoryTokens = sum(entries, "inventory_tokens");
   const startPromptTokens = sum(entries, "start_prompt_tokens");
   const savings = calculateSavings(inventoryTokens, startPromptTokens);
+  const verifiedEntries = entries.filter((entry) => entry.gate_status === "verified-handoff");
+  const qualityGatedHandoffSavingEntries = verifiedEntries.filter(hasPositiveStartContextSavings);
+  const verifiedInventoryTokens = sum(verifiedEntries, "inventory_tokens");
+  const verifiedStartPromptTokens = sum(verifiedEntries, "start_prompt_tokens");
+  const verifiedSavings = calculateSavings(verifiedInventoryTokens, verifiedStartPromptTokens);
+  const qualityGatedInventoryTokens = sum(qualityGatedHandoffSavingEntries, "inventory_tokens");
+  const qualityGatedStartPromptTokens = sum(qualityGatedHandoffSavingEntries, "start_prompt_tokens");
+  const qualityGatedSavings = calculateSavings(qualityGatedInventoryTokens, qualityGatedStartPromptTokens);
 
   return {
     entries: entries.length,
-    verified_handoffs: entries.filter((entry) => entry.gate_status === "verified-handoff").length,
+    verified_handoffs: verifiedEntries.length,
+    quality_gated_handoff_saving_handoffs: qualityGatedHandoffSavingEntries.length,
     needs_review_handoffs: entries.filter((entry) => entry.gate_status !== "verified-handoff").length,
     inventory_tokens: inventoryTokens,
     start_prompt_tokens: startPromptTokens,
     start_context_saved_tokens: savings.savedTokens,
     start_context_savings_percent: savings.percent,
+    verified_inventory_tokens: verifiedInventoryTokens,
+    verified_start_prompt_tokens: verifiedStartPromptTokens,
+    verified_start_context_saved_tokens: verifiedSavings.savedTokens,
+    verified_start_context_savings_percent: verifiedSavings.percent,
+    quality_gated_inventory_tokens: qualityGatedInventoryTokens,
+    quality_gated_start_prompt_tokens: qualityGatedStartPromptTokens,
+    quality_gated_start_context_saved_tokens: qualityGatedSavings.savedTokens,
+    quality_gated_start_context_savings_percent: qualityGatedSavings.percent,
     selected_context_saved_tokens: sum(entries, "selected_context_saved_tokens"),
     on_demand_index_tokens: sum(entries, "on_demand_index_tokens"),
     deferred_relevant_tokens: sum(entries, "deferred_relevant_tokens"),
@@ -105,12 +122,19 @@ Pfad: ${ledger.path || "nicht gespeichert"}
 
 - Einträge: ${formatNumber(totals.entries)}
 - Verifizierte Handoffs: ${formatNumber(totals.verified_handoffs)}
+- Qualitätsgegatede sparende Handoffs: ${formatNumber(totals.quality_gated_handoff_saving_handoffs)}
 - Review-pflichtige Handoffs: ${formatNumber(totals.needs_review_handoffs)}
 - Geschätzte Startkontext-Ersparnis: ${formatSavingsBar({
     originalTokens: totals.inventory_tokens,
     compactTokens: totals.start_prompt_tokens,
     savedTokens: totals.start_context_saved_tokens,
     percent: totals.start_context_savings_percent
+  })}
+- Qualitätsgegatede Startkontext-Ersparnis: ${formatSavingsBar({
+    originalTokens: totals.quality_gated_inventory_tokens,
+    compactTokens: totals.quality_gated_start_prompt_tokens,
+    savedTokens: totals.quality_gated_start_context_saved_tokens,
+    percent: totals.quality_gated_start_context_savings_percent
   })}
 - p95 Startprompt-Tokens: ${formatNumber(totals.p95_start_prompt_tokens)}
 - p95 gesparte Starttokens: ${formatNumber(totals.p95_saved_tokens)}
@@ -218,6 +242,18 @@ function toStartSavings(entry) {
     savedTokens: entry.start_context_saved_tokens,
     percent: entry.start_context_savings_percent
   };
+}
+
+function hasPositiveStartContextSavings(entry) {
+  const inventoryTokens = Number(entry?.inventory_tokens);
+  const startPromptTokens = Number(entry?.start_prompt_tokens);
+  const savedTokens = Number(entry?.start_context_saved_tokens);
+
+  if (!Number.isFinite(inventoryTokens) || inventoryTokens <= 0) return false;
+  if (Number.isFinite(startPromptTokens) && startPromptTokens >= 0 && startPromptTokens < inventoryTokens) {
+    return true;
+  }
+  return Number.isFinite(savedTokens) && savedTokens > 0;
 }
 
 function resolveLedgerPath(root, ledgerPath) {

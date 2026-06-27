@@ -47,12 +47,42 @@ describe("TaskOutcomeLedgerV1", () => {
     assert.equal(ledger.totals.review_rate_percent, 50);
     assert.equal(ledger.totals.failed_exit_tasks, 1);
     assert.equal(ledger.totals.output_oracle_failures, 1);
+    assert.equal(ledger.totals.output_oracle_sensitivity_failures, 0);
     assert.ok(ledger.totals.output_tokens_per_verified_task > 0);
     assert.ok(ledger.totals.p95_duration_ms >= 0);
     assert.deepEqual(ledger.totals.review_reasons, [
       { reason: "exit-code-mismatch:1!=0", count: 1 },
       { reason: "output-oracle-missing:TASK_OK", count: 1 }
     ]);
+  });
+
+  it("records output oracle sensitivity failures separately", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "sparkompass-task-ledger-sensitivity-"));
+    const ledgerPath = path.join(root, "task-outcome-ledger.json");
+    const review = await recordTaskOutcome({
+      rootPath: root,
+      command: "npm test",
+      exitCode: 0,
+      outputText: "PASS a\nTASK_OK first\nPASS b\nTASK_OK second\n",
+      expectOutputRegex: ["TASK_OK"]
+    });
+
+    await appendTaskOutcomeToLedger(root, review, {
+      out: ledgerPath,
+      runType: "test"
+    });
+    const ledger = await buildTaskOutcomeLedgerReport(root, {
+      ledger: ledgerPath
+    });
+
+    assert.equal(ledger.totals.entries, 1);
+    assert.equal(ledger.totals.verified_tasks, 0);
+    assert.equal(ledger.totals.output_oracle_failures, 0);
+    assert.equal(ledger.totals.output_oracle_sensitivity_failures, 1);
+    assert.deepEqual(ledger.totals.review_reasons, [
+      { reason: "output-oracle-insensitive:/TASK_OK/", count: 1 }
+    ]);
+    assert.deepEqual(ledger.entries[0].output_oracle_sensitivity_missed, ["/TASK_OK/"]);
   });
 
   it("formats an empty and non-empty task outcome ledger report", async () => {
@@ -73,6 +103,7 @@ describe("TaskOutcomeLedgerV1", () => {
         review_rate_percent: 0,
         failed_exit_tasks: 0,
         output_oracle_failures: 0,
+        output_oracle_sensitivity_failures: 0,
         receipt_verification_failures: 0,
         timed_out_tasks: 0,
         linked_context_packs: 0,
@@ -96,6 +127,7 @@ describe("TaskOutcomeLedgerV1", () => {
     assert.match(report, /TaskOutcomeLedgerV1/);
     assert.match(report, /Verifizierte Tasks: 1/);
     assert.match(report, /Verifikationsrate: 100%/);
+    assert.match(report, /Output-Orakel-Sensitivitätsfehler: 0/);
     assert.match(report, /Output-Tokens pro verifiziertem Task/);
     assert.match(report, /Review-Gründe: keine/);
   });

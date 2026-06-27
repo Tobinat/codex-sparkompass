@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { describe, it } from "node:test";
 import { buildContextPack } from "../src/context-pack.mjs";
-import { recordTaskOutcome, runTaskOutcome } from "../src/task-outcome.mjs";
+import { formatTaskOutcomeReport, recordTaskOutcome, runTaskOutcome } from "../src/task-outcome.mjs";
 
 describe("TaskOutcomeReceiptV1", () => {
   it("records a successful task output with an output oracle", async () => {
@@ -16,6 +16,8 @@ describe("TaskOutcomeReceiptV1", () => {
     assert.equal(outcome.schema, "TaskOutcomeReceiptV1");
     assert.equal(outcome.gate.status, "verified-task-outcome");
     assert.equal(outcome.output_oracle.result.success, true);
+    assert.equal(outcome.output_oracle.sensitivity.success, true);
+    assert.equal(outcome.gate.requirements.output_oracle_sensitivity_success, true);
     assert.equal(outcome.result.exit_code, 0);
     assert.equal(outcome.output_oracle.result.matched_count, 1);
   });
@@ -58,6 +60,23 @@ describe("TaskOutcomeReceiptV1", () => {
     assert.ok(outcome.gate.reasons.includes("output-oracle-missing:TASK_OK"));
   });
 
+  it("flags broad output regex oracles as insensitive", async () => {
+    const outcome = await recordTaskOutcome({
+      command: "npm test",
+      exitCode: 0,
+      outputText: "PASS suite-a\nTASK_OK first\nPASS suite-b\nTASK_OK second\n",
+      expectOutputRegex: ["TASK_OK"]
+    });
+
+    assert.equal(outcome.output_oracle.result.success, true);
+    assert.equal(outcome.output_oracle.sensitivity.success, false);
+    assert.deepEqual(outcome.output_oracle.sensitivity.missed, ["/TASK_OK/"]);
+    assert.equal(outcome.gate.status, "task-outcome-needs-review");
+    assert.ok(outcome.gate.reasons.includes("output-oracle-insensitive:/TASK_OK/"));
+    assert.equal(outcome.gate.requirements.output_oracle_sensitivity_success, false);
+    assert.match(formatTaskOutcomeReport(outcome), /nicht sensitiv: \/TASK_OK\//);
+  });
+
   it("runs a local command and captures a verified outcome", async () => {
     const command = `${JSON.stringify(process.execPath)} -e ${JSON.stringify("console.log('TASK_OK')")}`;
     const outcome = await runTaskOutcome({
@@ -69,6 +88,7 @@ describe("TaskOutcomeReceiptV1", () => {
     assert.equal(outcome.gate.status, "verified-task-outcome");
     assert.equal(outcome.result.exit_code, 0);
     assert.equal(outcome.output_oracle.result.success, true);
+    assert.equal(outcome.output_oracle.sensitivity.success, true);
   });
 
   it("CLI task run emits JSON and exits successfully", () => {

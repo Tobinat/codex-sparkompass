@@ -81,6 +81,7 @@ export function summarizeTaskOutcomeLedger(entries = []) {
     review_rate_percent: entries.length ? Math.round((reviewTasks / entries.length) * 100) : 0,
     failed_exit_tasks: entries.filter((entry) => !entry.command_exit_success).length,
     output_oracle_failures: entries.filter((entry) => entry.output_oracle_enabled && !entry.output_oracle_success).length,
+    output_oracle_sensitivity_failures: entries.filter((entry) => entry.output_oracle_enabled && !entry.output_oracle_sensitivity_success).length,
     receipt_verification_failures: entries.filter((entry) => entry.context_pack_id && !entry.receipt_verification_success).length,
     timed_out_tasks: entries.filter((entry) => entry.timed_out).length,
     linked_context_packs: entries.filter((entry) => entry.context_pack_id).length,
@@ -115,6 +116,7 @@ Pfad: ${ledger.path || "nicht gespeichert"}
 - Verifikationsrate: ${formatNumber(totals.verification_rate_percent)}%
 - Exit-Code-Fehler: ${formatNumber(totals.failed_exit_tasks)}
 - Output-Orakel-Fehler: ${formatNumber(totals.output_oracle_failures)}
+- Output-Orakel-Sensitivitätsfehler: ${formatNumber(totals.output_oracle_sensitivity_failures)}
 - Receipt-Verifikations-Fehler: ${formatNumber(totals.receipt_verification_failures)}
 - Timeouts: ${formatNumber(totals.timed_out_tasks)}
 - Verknüpfte ContextPacks: ${formatNumber(totals.linked_context_packs)}
@@ -135,6 +137,7 @@ function taskOutcomeToLedgerEntry(outcome, options = {}) {
   const receiptVerification = outcome.context_pack?.receipt_verification || null;
   const outputOracle = outcome.output_oracle || {};
   const outputOracleResult = outputOracle.result || {};
+  const outputOracleSensitivity = outputOracle.sensitivity || {};
   const gate = outcome.gate || {};
   const seed = [
     outcome.task_id,
@@ -173,6 +176,10 @@ function taskOutcomeToLedgerEntry(outcome, options = {}) {
     output_oracle_success: outputOracle.enabled ? Boolean(outputOracleResult.success) : true,
     output_oracle_matched: normalizeNumber(outputOracleResult.matched_count),
     output_oracle_total: normalizeNumber(outputOracleResult.total),
+    output_oracle_sensitivity_success: outputOracle.enabled ? Boolean(outputOracleSensitivity.success) : true,
+    output_oracle_sensitivity_detected: normalizeNumber(outputOracleSensitivity.detected_count),
+    output_oracle_sensitivity_total: normalizeNumber(outputOracleSensitivity.total),
+    output_oracle_sensitivity_missed: Array.isArray(outputOracleSensitivity.missed) ? outputOracleSensitivity.missed : [],
     gate_status: gate.status || "unknown",
     gate_verified: Boolean(gate.verified),
     gate_reasons: gate.reasons || [],

@@ -6,7 +6,7 @@ import { analyzeScan } from "../src/analyzer.mjs";
 import { formatBenchmarkReport, runBenchmark } from "../src/benchmark.mjs";
 import { compressText, formatCompressionReport } from "../src/compressor.mjs";
 import { buildContextBOM, formatContextBOMReport } from "../src/context-bom.mjs";
-import { calibrateContext, formatCalibrationReport } from "../src/context-calibration.mjs";
+import { buildCalibratedContextPack, calibrateContext, formatCalibrationReport } from "../src/context-calibration.mjs";
 import { buildContextDelta, formatCacheReport, formatDeltaReport, formatLookupReport, lookupContext, writeContextCache } from "../src/context-cache.mjs";
 import { buildContextControlReport, formatContextControlReport } from "../src/context-control.mjs";
 import { buildContextAblationAudit, formatContextAblationAuditReport } from "../src/context-ablation.mjs";
@@ -69,7 +69,7 @@ Nutzung:
   sparkompass handoff [pfad] --goal "..." [--budget 800] [--risk-profile balanced] [--file "src/app.ts"] [--cache .sparkompass/context-cache.json] [--graph] [--done "..."] [--expect "..."] [--expect-regex "..."] [--previous-envelope envelope.json] [--min-cache-prefix-tokens 1024] [--print-prompt] [--ledger .sparkompass/handoff-ledger.json] [--json]
   sparkompass envelope [pfad] --goal "..." [--budget 800] [--risk-profile balanced] [--file "src/app.ts"] [--cache .sparkompass/context-cache.json] [--graph] [--expect "..."] [--expect-regex "..."] [--previous-envelope envelope.json] [--ledger .sparkompass/envelope-ledger.json] [--min-cache-prefix-tokens 1024] [--json]
   sparkompass compress [--file "notes.txt"] [--text "..."] [--target 35] [--mode auto] [--keep "..."] [--json]
-  sparkompass pack [--file "notes.txt"] [--text "..."] [--target 35] [--risk-profile balanced] [--mode auto] [--keep "..."] [--expect "..."] [--expect-regex "..."] [--ledger .sparkompass/savings-ledger.json] [--registry .sparkompass/context-pack-registry.json] [--json]
+  sparkompass pack [--file "notes.txt"] [--text "..."] [--target 35|auto] [--auto-target] [--risk-profile balanced] [--mode auto] [--keep "..."] [--expect "..."] [--expect-regex "..."] [--ledger .sparkompass/savings-ledger.json] [--registry .sparkompass/context-pack-registry.json] [--json]
   sparkompass receipt schema [--json]
   sparkompass receipt lint --receipt "pack.json" [--json]
   sparkompass receipt verify --receipt "pack.json" [--file "notes.txt"|--text "..."] [--context "delivered.txt"] [--json]
@@ -109,7 +109,7 @@ Nutzung:
   sparkompass semantic-cache add [pfad] --query "..." [--file notes.txt|--text "..."] [--oracle "..."] [--expect "..."] [--expect-regex "..."] [--tool-version "node --test=20"] [--risk-profile balanced] [--registry .sparkompass/context-pack-registry.json] [--json]
   sparkompass semantic-cache lookup [pfad] --query "..." [--oracle "..."] [--expect "..."] [--expect-regex "..."] [--tool-version "node --test=20"] [--min-similarity 0.6] [--json]
   sparkompass prompt-advisory [--file prompt.json|--text "..."] [--hook-payload] [--min-tokens 1600] [--min-lines 120] [--quiet-ok] [--json]
-  sparkompass prompt-prepare [--file prompt.txt|--text "..."] [--hook-payload] [--goal "..."] [--target 35] [--risk-profile balanced] [--keep "..."] [--expect "..."] [--expect-regex "..."] [--include-receipt] [--ledger .sparkompass/prompt-preparation-ledger.json] [--json]
+  sparkompass prompt-prepare [--file prompt.txt|--text "..."] [--hook-payload] [--goal "..."] [--target 35|auto] [--auto-target] [--risk-profile balanced] [--keep "..."] [--expect "..."] [--expect-regex "..."] [--include-receipt] [--ledger .sparkompass/prompt-preparation-ledger.json] [--json]
   sparkompass prompt-ledger report [pfad] [--ledger .sparkompass/prompt-preparation-ledger.json] [--json]
   sparkompass prompt-ledger add [pfad] --preparation "prompt-preparation.json" [--out .sparkompass/prompt-preparation-ledger.json] [--kind prompt-prepare] [--note "..."] [--json]
   sparkompass pilot [pfad] [--ledger-dir .sparkompass/pilot-run] [--file README.md] [--goal "..."] [--task-command "npm test"] [--json]
@@ -180,8 +180,8 @@ Beispiele:
   sparkompass semantic-cache add . --query compressText --file test/fixtures/code-sample.mjs --oracle "npm test" --tool-version "npm=10" --registry
   sparkompass semantic-cache lookup . --query compressText --oracle "npm test" --tool-version "npm=10"
   sparkompass prompt-advisory --text "großer Prompt ..."
-  sparkompass prompt-prepare --file "großer-prompt.txt" --expect "AUTH_RESET_TOKEN_EXPIRED"
-  sparkompass prompt-prepare --file "großer-prompt.txt" --ledger
+  sparkompass prompt-prepare --file "großer-prompt.txt" --target auto --expect "AUTH_RESET_TOKEN_EXPIRED"
+  sparkompass prompt-prepare --file "großer-prompt.txt" --target auto --ledger
   sparkompass prompt-ledger report .
   sparkompass pilot . --ledger-dir .sparkompass/pilot-run
   sparkompass impact . --savings-ledger .sparkompass/pilot-run/savings-ledger.json --task-outcome-ledger .sparkompass/pilot-run/task-outcome-ledger.json --handoff-ledger .sparkompass/pilot-run/handoff-ledger.json --prompt-preparation-ledger .sparkompass/pilot-run/prompt-preparation-ledger.json
@@ -660,6 +660,10 @@ try {
     const options = parseOptions(args.slice(1), {
       json: false,
       target: 35,
+      autoTarget: false,
+      autoMinTarget: 10,
+      autoMaxTarget: 90,
+      autoStep: 5,
       riskProfile: "balanced",
       mode: "auto",
       keep: [],
@@ -672,15 +676,22 @@ try {
       storeSourceText: false
     });
     const input = await readCompressionInput(options);
-    const pack = buildContextPack(input.text, {
+    const autoTarget = shouldAutoTarget(options);
+    const packOptions = {
       label: input.label,
-      targetPercent: Number(options.target) || 35,
+      targetPercent: autoTarget ? undefined : Number(options.target) || 35,
+      autoMinTargetPercent: Number(options.autoMinTarget) || 10,
+      autoMaxTargetPercent: Number(options.autoMaxTarget) || 90,
+      autoStepPercent: Number(options.autoStep) || 5,
       riskProfile: String(options.riskProfile || "balanced"),
       mode: String(options.mode || "auto"),
       keep: asArray(options.keep),
       expect: asArray(options.expect),
       expectRegex: asArray(options.expectRegex)
-    });
+    };
+    const pack = autoTarget
+      ? buildCalibratedContextPack(input.text, packOptions)
+      : buildContextPack(input.text, packOptions);
     const ledgerWrite = options.ledger
       ? await appendReceiptToLedger(process.cwd(), pack.receipt, {
         out: options.ledger === true ? DEFAULT_SAVINGS_LEDGER_PATH : String(options.ledger),
@@ -1703,6 +1714,10 @@ try {
       minLines: "",
       goal: "",
       target: 35,
+      autoTarget: false,
+      autoMinTarget: 10,
+      autoMaxTarget: 90,
+      autoStep: 5,
       riskProfile: "balanced",
       mode: "auto",
       keep: [],
@@ -1719,7 +1734,11 @@ try {
       minTokens: options.minTokens,
       minLines: options.minLines,
       goal: String(options.goal || ""),
-      targetPercent: Number(options.target) || 35,
+      autoTarget: shouldAutoTarget(options),
+      targetPercent: shouldAutoTarget(options) ? undefined : Number(options.target) || 35,
+      autoMinTargetPercent: Number(options.autoMinTarget) || 10,
+      autoMaxTargetPercent: Number(options.autoMaxTarget) || 90,
+      autoStepPercent: Number(options.autoStep) || 5,
       riskProfile: String(options.riskProfile || "balanced"),
       mode: String(options.mode || "auto"),
       keep: asArray(options.keep),
@@ -2157,6 +2176,10 @@ function asArray(value) {
   return Array.isArray(value) ? value : [value];
 }
 
+function shouldAutoTarget(options) {
+  return Boolean(options.autoTarget) || String(options.target || "").trim().toLowerCase() === "auto";
+}
+
 function parseBudgetOption(value) {
   if (value === undefined || value === "") return undefined;
   const parsed = Number(value);
@@ -2209,7 +2232,7 @@ Text vor Codex verdichten:
   sparkompass compress --file notes.txt
 
 Verifiziertes ContextPack erstellen:
-  sparkompass pack --file notes.txt --keep WICHTIGER_ANKER --expect "Done when: sicher"
+  sparkompass pack --file notes.txt --target auto --keep WICHTIGER_ANKER --expect "Done when: sicher"
 
 ContextPack-Receipt nachprüfen:
   sparkompass receipt verify --receipt pack.json --file notes.txt

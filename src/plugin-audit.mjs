@@ -50,6 +50,7 @@ export async function buildPluginInstallSmokeAudit(rootPath, options = {}) {
     mcpConfig = JSON.parse(await fs.readFile(path.join(installedPluginRoot, ".mcp.json"), "utf8"));
     hooksConfig = JSON.parse(await fs.readFile(path.join(installedPluginRoot, "hooks/hooks.json"), "utf8"));
     skillText = await fs.readFile(path.join(installedPluginRoot, "skills/codex-sparkompass/SKILL.md"), "utf8");
+    const pluginVersion = manifest.version || "unknown";
 
     checks.push(check("manifest-shape", manifest.name === "codex-sparkompass"
       && manifest.skills === "./skills/"
@@ -155,7 +156,7 @@ export async function buildPluginInstallSmokeAudit(rootPath, options = {}) {
     checks.push(check("hook-redacts-sensitive-anchor", !hookCommand.stdout.includes("AUTH_RESET_TOKEN_EXPIRED"), "AUTH_RESET_TOKEN_EXPIRED not echoed"));
 
     const codexHome = path.join(tempRoot, "codex-home");
-    const cachedPluginRoot = path.join(codexHome, "plugins/cache/codex-sparkompass/codex-sparkompass/0.1.0-alpha.0");
+    const cachedPluginRoot = path.join(codexHome, "plugins/cache/codex-sparkompass/codex-sparkompass", pluginVersion);
     await fs.mkdir(path.dirname(cachedPluginRoot), { recursive: true });
     await fs.cp(sourcePluginRoot, cachedPluginRoot, { recursive: true });
     await fs.writeFile(path.join(codexHome, "config.toml"), [
@@ -221,7 +222,7 @@ export async function buildPluginInstallSmokeAudit(rootPath, options = {}) {
       && (cachedMcpLookupResult.selected || []).some((unit) => unit.name === "compressText"), `lookup selected=${cacheMcpLookupSelected}`));
 
     const gitCodexHome = path.join(tempRoot, "git-codex-home");
-    const gitCachedPluginRoot = path.join(gitCodexHome, "plugins/cache/codex-sparkompass/codex-sparkompass/0.1.0-alpha.0");
+    const gitCachedPluginRoot = path.join(gitCodexHome, "plugins/cache/codex-sparkompass/codex-sparkompass", pluginVersion);
     const gitPluginData = path.join(gitCodexHome, "plugin-data/codex-sparkompass");
     await fs.mkdir(path.dirname(gitCachedPluginRoot), { recursive: true });
     await fs.mkdir(gitPluginData, { recursive: true });
